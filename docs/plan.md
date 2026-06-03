@@ -10,10 +10,10 @@ todos:
     status: completed
   - id: api-contract
     content: Define OpenAPI/JSON contract — reference session, analyze recording, animation keyframes, pronunciation report
-    status: pending
+    status: completed
   - id: backend-reference
     content: F# reference pipeline — G2P, TTS (Piper local + Azure optional), PhonemeTimeline + ArticulatoryKeyframe generation
-    status: pending
+    status: completed
   - id: backend-analyze
     content: F# user pipeline — WAV ingest, Azure pronunciation assessment + MFA fallback, user timeline
     status: pending

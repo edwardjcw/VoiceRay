@@ -49,7 +49,7 @@ Standard pedagogical set (varied places/manners):
 | scaffold-solution | KAN-48 | `feature/w1-scaffold` | done | Merged @ `ed14360` |
 | vocal-tract-svg | KAN-50 | `feature/w3-vocal-tract-svg` | done | Merged @ `6418dd8` |
 | api-contract | KAN-49 | `feature/w2-api-contract` | done | Merged @ `cbcd6bb` |
-| backend-reference | KAN-51 | `feature/w4-reference-pipeline` | done | Piper + G2P stub + `/reference` |
+| backend-reference | KAN-51 | `feature/w4-reference-pipeline` | done | Merged @ `8c63e3f` (`e20f715`) |
 | backend-analyze | KAN-52 | `feature/w5-analyze` | pending | MFA/Whisper OSS |
 | backend-compare | KAN-53 | `feature/w6-compare` | pending | Phase 3 |
 | frontend-flows | KAN-54 | `feature/w7-frontend` | pending | Playwright required |
@@ -60,7 +60,7 @@ Standard pedagogical set (varied places/manners):
 | Phase | Status | Success criteria (from plan) |
 | ----- | ------ | ------------------------------ |
 | 0 Foundation | done | .NET 10 + Vite + CI + MIT + reference.png (KAN-48) |
-| 1 Reference + SVG | in progress | SVG rig (KAN-50); reference audio/keyframes via KAN-51 `/reference` |
+| 1 Reference + SVG | done | KAN-50 SVG + KAN-51 `/reference` (integration @ `8c63e3f`) |
 | 2 Record + replay | pending | Analyze WAV; user pose differs on mispronunciation |
 | 3 Compare + coaching | pending | Ghost overlay + coaching text |
 | 4 Multilingual + MFA | pending | Locale packs + MFA Docker + PWA |
@@ -79,9 +79,9 @@ Standard pedagogical set (varied places/manners):
 
 **Active:** KAN-52 (W5 analyze) — next
 
-**Completed:** KAN-47 (W0); KAN-48–50 merged; KAN-51 on `feature/w4-reference-pipeline` (commit pending merge)
+**Completed:** KAN-47–51 on `feature/voiceray-mvp` @ `8c63e3f`
 
-**Proof queue:** merge W4 → integration, then `dotnet test` on `feature/voiceray-mvp`
+**Proof queue:** integration `dotnet test` — **16 passed** (post-W4 merge)
 
 ## Gate evidence
 
@@ -99,7 +99,7 @@ Standard pedagogical set (varied places/manners):
 2. ~~`feature/w0-models`~~ W0 assets @ `0874ebc` (cherry-picked files, not branch merge)
 3. ~~`feature/w2-api-contract`~~ @ `cbcd6bb`
 4. ~~`feature/w3-vocal-tract-svg`~~ @ `6418dd8`
-5. `feature/w4-reference-pipeline`
+5. ~~`feature/w4-reference-pipeline`~~ @ `8c63e3f`
 6. `feature/w5-analyze`
 7. `feature/w6-compare`
 8. `feature/w7-frontend`
