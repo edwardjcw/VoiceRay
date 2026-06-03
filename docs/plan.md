@@ -19,7 +19,7 @@ todos:
     status: completed
   - id: backend-compare
     content: F# phoneme diff + rule-based coaching; expose compare endpoint
-    status: pending
+    status: completed
   - id: frontend-flows
     content: JS practice/record/compare screens, MediaRecorder, audio playback synced to backend keyframes
     status: pending

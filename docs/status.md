@@ -51,7 +51,7 @@ Standard pedagogical set (varied places/manners):
 | api-contract | KAN-49 | `feature/w2-api-contract` | done | Merged @ `cbcd6bb` |
 | backend-reference | KAN-51 | `feature/w4-reference-pipeline` | done | Merged @ `8c63e3f` (`e20f715`) |
 | backend-analyze | KAN-52 | `feature/w5-analyze` | done | Merged @ `4ead801` |
-| backend-compare | KAN-53 | `feature/w6-compare` | done (branch) | Phase 3 backend; merge pending |
+| backend-compare | KAN-53 | `feature/w6-compare` | done | Merged @ `8aa67f7` |
 | frontend-flows | KAN-54 | `feature/w7-frontend` | pending | Playwright required |
 | docs-multilingual | KAN-55 | `feature/w8-docs-mfa` | pending | Phase 4 |
 
@@ -77,11 +77,11 @@ Standard pedagogical set (varied places/manners):
 
 ## WIP policy (current wave)
 
-**Active:** KAN-54 (W7 frontend) — next after merge `feature/w6-compare`
+**Active:** KAN-54 (W7 frontend), KAN-55 (W8 docs/MFA)
 
-**Completed:** KAN-47–53 backend on branches; KAN-47–52 merged on `feature/voiceray-mvp` @ `4ead801`; KAN-53 on `feature/w6-compare` (commit pending below)
+**Completed:** KAN-47–53 on `feature/voiceray-mvp` @ `8aa67f7`
 
-**Proof queue:** **32 passed** on `feature/w6-compare` (21 Core + 11 Api)
+**Proof queue:** integration **32 passed** (post-W6 merge)
 
 ## Gate evidence
 
@@ -101,7 +101,7 @@ Standard pedagogical set (varied places/manners):
 4. ~~`feature/w3-vocal-tract-svg`~~ @ `6418dd8`
 5. ~~`feature/w4-reference-pipeline`~~ @ `8c63e3f`
 6. ~~`feature/w5-analyze`~~ @ `4ead801`
-7. `feature/w6-compare` — ready to merge (KAN-53)
+7. ~~`feature/w6-compare`~~ @ `8aa67f7`
 8. `feature/w7-frontend`
 9. `feature/w8-docs-mfa`
 10. Single PR → `main`
