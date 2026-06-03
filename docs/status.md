@@ -123,6 +123,7 @@ Standard pedagogical set (varied places/manners):
 | Item | Status |
 | ---- | ------ |
 | Branch | `feature/w2-api-contract` (from `feature/voiceray-mvp`) |
+| Commit | `cbcd6bb` |
 | Pre-work `dotnet build` | Pass (0 warnings) |
 | Post-work `dotnet build` / `dotnet test` | Pass (7 tests, 0 warnings) |
 | Post-work `npm run build` | N/A (no client changes) |
