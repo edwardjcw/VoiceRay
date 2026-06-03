@@ -7,6 +7,7 @@
 
   <ItemGroup>
     <Compile Include="Tests.fs" />
+    <Compile Include="ReferenceServiceTests.fs" />
   </ItemGroup>
 
   <ItemGroup>
@@ -18,6 +19,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\VoiceRay.Api\VoiceRay.Api.fsproj" />
+    <ProjectReference Include="..\..\src\VoiceRay.Infrastructure\VoiceRay.Infrastructure.fsproj" />
   </ItemGroup>
 
 </Project>

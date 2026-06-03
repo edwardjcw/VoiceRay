@@ -4,7 +4,7 @@ Base path: `/api/v1`. JSON bodies use **camelCase** property names unless noted.
 
 OpenAPI document (development): `GET /openapi/v1.json` when the API runs with OpenAPI enabled.
 
-Implementation types live in `VoiceRay.Core` (`Contract.fs`). Endpoint handlers are stubs (`501 Not Implemented`) until reference (W4), analyze (W5), and compare (W6) pipelines land.
+Implementation types live in `VoiceRay.Core` (`Contract.fs`). `POST /api/v1/reference` is implemented (W4, Piper + G2P stub + keyframes). `analyze` and `compare` remain stubs (`501`) until W5–W6.
 
 ---
 
@@ -85,9 +85,8 @@ Generates reference TTS audio, IPA phoneme timeline, and articulatory keyframes 
 
 | Status | When |
 | ------ | ---- |
-| `400` | Missing/invalid `text` or `locale` |
-| `501` | Stub (pre-W4) |
-| `503` | TTS or G2P unavailable |
+| `400` | Missing/invalid `text` or `locale`; word not in demo lexicon (`en-US`) |
+| `503` | Piper TTS not provisioned or synthesis failed |
 
 ---
 

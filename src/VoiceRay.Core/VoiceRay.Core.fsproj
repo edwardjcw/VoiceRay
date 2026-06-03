@@ -9,6 +9,9 @@
     <Compile Include="Contract.fs" />
     <Compile Include="CompareSegmentJsonConverter.fs" />
     <Compile Include="ContractJson.fs" />
+    <Compile Include="G2pStub.fs" />
+    <Compile Include="PoseMap.fs" />
+    <Compile Include="ReferencePipeline.fs" />
   </ItemGroup>
 
 </Project>

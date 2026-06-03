@@ -1,4 +1,4 @@
-﻿module VoiceRay.Core.Tests
+﻿module CoreContractTests
 
 open VoiceRay.Core
 open VoiceRay.Core.ApplicationInfo

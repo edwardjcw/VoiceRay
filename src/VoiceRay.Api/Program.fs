@@ -17,6 +17,10 @@ let main args =
 
     builder.Services.AddOpenApi() |> ignore
 
+    let piperOptions = PiperOptions.load builder.Configuration builder.Environment.ContentRootPath
+    builder.Services.AddSingleton(piperOptions) |> ignore
+    builder.Services.AddSingleton<ReferenceService>() |> ignore
+
     let app = builder.Build()
 
     let speechProvider =
@@ -25,6 +29,7 @@ let main args =
         |> SpeechConfiguration.parseProvider
 
     app.UseCors() |> ignore
+    app.UseStaticFiles() |> ignore
 
     if app.Environment.IsDevelopment() then
         app.MapOpenApi() |> ignore

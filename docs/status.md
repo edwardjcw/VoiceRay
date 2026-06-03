@@ -49,7 +49,7 @@ Standard pedagogical set (varied places/manners):
 | scaffold-solution | KAN-48 | `feature/w1-scaffold` | done | Merged @ `ed14360` |
 | vocal-tract-svg | KAN-50 | `feature/w3-vocal-tract-svg` | done | Merged @ `6418dd8` |
 | api-contract | KAN-49 | `feature/w2-api-contract` | done | Merged @ `cbcd6bb` |
-| backend-reference | KAN-51 | `feature/w4-reference-pipeline` | pending | Piper from W0 |
+| backend-reference | KAN-51 | `feature/w4-reference-pipeline` | done | Piper + G2P stub + `/reference` |
 | backend-analyze | KAN-52 | `feature/w5-analyze` | pending | MFA/Whisper OSS |
 | backend-compare | KAN-53 | `feature/w6-compare` | pending | Phase 3 |
 | frontend-flows | KAN-54 | `feature/w7-frontend` | pending | Playwright required |
@@ -60,7 +60,7 @@ Standard pedagogical set (varied places/manners):
 | Phase | Status | Success criteria (from plan) |
 | ----- | ------ | ------------------------------ |
 | 0 Foundation | done | .NET 10 + Vite + CI + MIT + reference.png (KAN-48) |
-| 1 Reference + SVG | in progress | SVG rig done (KAN-50); reference audio/keyframes pending W4 |
+| 1 Reference + SVG | in progress | SVG rig (KAN-50); reference audio/keyframes via KAN-51 `/reference` |
 | 2 Record + replay | pending | Analyze WAV; user pose differs on mispronunciation |
 | 3 Compare + coaching | pending | Ghost overlay + coaching text |
 | 4 Multilingual + MFA | pending | Locale packs + MFA Docker + PWA |
@@ -73,22 +73,22 @@ Standard pedagogical set (varied places/manners):
 | Piper binary + en-US voice | **done** (local) | `models/piper/` via `scripts/provision-piper.ps1` (~97 MB); gitignored |
 | Whisper cache | **reuse** | `%USERPROFILE%\.cache\whisper\` (~1.73 GB); not copied — see `docs/providers.md` |
 | MFA Docker / models | pending | `workers/mfa/` (KAN-55, Phase 4) |
-| CMU / G2P lexicon | pending | `VoiceRay.Core` (W4) |
+| CMU / G2P lexicon | **stub** | `VoiceRay.Core/G2pStub.fs` — 10 demo words `en-US` |
 
 ## WIP policy (current wave)
 
-**Active:** KAN-51 (W4 reference pipeline) — next
+**Active:** KAN-52 (W5 analyze) — next
 
-**Completed:** KAN-47 (W0 @ `0874ebc` files on integration); KAN-48–50 merged
+**Completed:** KAN-47 (W0); KAN-48–50 merged; KAN-51 on `feature/w4-reference-pipeline` (commit pending merge)
 
-**Proof queue:** `dotnet test` on integration after W4 slice
+**Proof queue:** merge W4 → integration, then `dotnet test` on `feature/voiceray-mvp`
 
 ## Gate evidence
 
 | Gate | Pre-work | Post-work |
 | ---- | -------- | --------- |
-| `dotnet build` | N/A; KAN-49: 0 warnings | KAN-48/49: pass (Release) |
-| `dotnet test` | N/A; KAN-49: 7 passed | KAN-48: 4 passed |
+| `dotnet build` | KAN-51: 0 warnings (Release) | KAN-51: 0 warnings (Release) |
+| `dotnet test` | KAN-51: 16 passed (11 Core + 5 Api) | KAN-51: 16 passed |
 | `npm run build` (client/) | N/A | KAN-48, KAN-50: pass |
 | `npm run test` (client/) | N/A | KAN-50: 6 passed |
 | Playwright | N/A | N/A (W7) |
@@ -127,6 +127,16 @@ Standard pedagogical set (varied places/manners):
 | Commit | `cbcd6bb` |
 | Post-work `dotnet build` / `dotnet test` | Pass (7 tests, 0 warnings) |
 | UI/API validation | `docs/api.md` + 501 stubs; OpenAPI `/openapi/v1.json` (Development) |
+
+## KAN-51 commit gate (feature/w4-reference-pipeline)
+
+| Item | Status |
+| ---- | ------ |
+| Branch | `feature/w4-reference-pipeline` (from `feature/voiceray-mvp`) |
+| Pre-work `dotnet build` | Pass (0 warnings) |
+| Post-work `dotnet build` / `dotnet test` | Pass (16 tests, 0 warnings) |
+| UI/API validation | `POST /api/v1/reference` live; analyze/compare remain 501; Piper + demo lexicon |
+| PR | **None** (per-epic merge policy) |
 
 ## KAN-50 commit gate (feature/w3-vocal-tract-svg)
 

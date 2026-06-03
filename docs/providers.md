@@ -25,17 +25,20 @@ $voice = "models\piper\voices\en_US-lessac-medium.onnx"
 & $piper -m $voice -f out.wav -- "Hello from VoiceRay"
 ```
 
-### App configuration (planned W4+)
+### App configuration (`src/VoiceRay.Api/appsettings.json`)
 
 ```json
 "Speech": {
   "Provider": "Local",
   "Piper": {
     "Executable": "models/piper/bin/piper/piper.exe",
-    "VoiceModel": "models/piper/voices/en_US-lessac-medium.onnx"
+    "VoiceModel": "models/piper/voices/en_US-lessac-medium.onnx",
+    "MediaRoot": "wwwroot/media/reference"
   }
 }
 ```
+
+Reference audio is written under `MediaRoot` and served at `/media/reference/{id}.wav` when synthesis succeeds.
 
 ## Azure (deferred)
 

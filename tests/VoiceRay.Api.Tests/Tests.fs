@@ -1,4 +1,4 @@
-﻿module VoiceRay.Api.Tests
+﻿module ApiSpeechConfigTests
 
 open VoiceRay.Infrastructure.SpeechConfiguration
 open Xunit
