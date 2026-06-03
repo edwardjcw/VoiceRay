@@ -40,6 +40,16 @@ $voice = "models\piper\voices\en_US-lessac-medium.onnx"
 
 Reference audio is written under `MediaRoot` and served at `/media/reference/{id}.wav` when synthesis succeeds.
 
+### Alignment (`Speech:Alignment`)
+
+| Setting | Values | Notes |
+| ------- | ------ | ----- |
+| `Provider` | `Whisper` (default), `Mfa` | Whisper stub preferred when cache exists; otherwise MFA stub |
+| `Whisper:CacheDir` | path or empty | Empty → `%USERPROFILE%\.cache\whisper\` |
+| `Mfa:WorkerUrl` | URL or empty | Docker worker (Phase 4); stub timing used in W5 |
+
+Analyze uses `VOICERAY_FORCE_CPU=1` to force CPU metadata banner; CUDA is detected via `CUDA_PATH` / `CUDA_HOME`.
+
 ## Azure (deferred)
 
 Not used in the VoiceRay Web MVP epic. Do not add SDK calls requiring keys until explicitly scoped.

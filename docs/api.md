@@ -4,7 +4,7 @@ Base path: `/api/v1`. JSON bodies use **camelCase** property names unless noted.
 
 OpenAPI document (development): `GET /openapi/v1.json` when the API runs with OpenAPI enabled.
 
-Implementation types live in `VoiceRay.Core` (`Contract.fs`). `POST /api/v1/reference` is implemented (W4, Piper + G2P stub + keyframes). `analyze` and `compare` remain stubs (`501`) until W5–W6.
+Implementation types live in `VoiceRay.Core` (`Contract.fs`). `POST /api/v1/reference` is implemented (W4, Piper + G2P stub + keyframes). `POST /api/v1/analyze` is implemented (W5, WAV normalize + OSS Whisper/MFA alignment stubs). `compare` remains a stub (`501`) until W6.
 
 ---
 
@@ -111,14 +111,32 @@ Aligns user WAV to reference text; returns user phoneme timeline, keyframes, and
 | `phonemes` | `PhonemeSegment[]` | yes | User-aligned IPA timeline |
 | `keyframes` | `ArticulatoryKeyframe[]` | yes | User articulatory poses |
 | `scores` | `PhonemeScore[]` | yes | Per-phoneme assessment |
-| `audioEcho` | string | no | Base64 echo of normalized input for replay |
+| `audioEcho` | string | no | Base64 echo of normalized 16 kHz mono WAV for replay |
+| `metadata` | `AnalyzeMetadata` | yes | Alignment engine + compute device banner for UI |
+
+`AnalyzeMetadata`:
+
+| Field | Type | Description |
+| ----- | ---- | ----------- |
+| `alignmentEngine` | string | `whisper-stub` or `mfa-stub` (OSS forced-alignment path) |
+| `computeDevice` | string | `cpu` or `cuda` |
+| `deviceBanner` | string | Human-readable banner (CPU fallback vs CUDA) |
+| `sampleRateHz` | number | Always `16000` after normalize |
+| `channels` | number | Always `1` after normalize |
 
 ```json
 {
   "phonemes": [{ "ipa": "p", "startMs": 10, "endMs": 90 }],
   "keyframes": [],
   "scores": [{ "ipa": "p", "score": 92.5, "accuracy": "good" }],
-  "audioEcho": null
+  "audioEcho": null,
+  "metadata": {
+    "alignmentEngine": "whisper-stub",
+    "computeDevice": "cpu",
+    "deviceBanner": "Alignment running on CPU — enable CUDA for GPU acceleration (VOICERAY_FORCE_CPU unset).",
+    "sampleRateHz": 16000,
+    "channels": 1
+  }
 }
 ```
 
@@ -126,9 +144,8 @@ Aligns user WAV to reference text; returns user phoneme timeline, keyframes, and
 
 | Status | When |
 | ------ | ---- |
-| `400` | Missing audio, wrong format, or invalid fields |
-| `501` | Stub (pre-W5) |
-| `503` | Assessment worker unavailable |
+| `400` | Missing audio, wrong format, unknown demo word, or invalid fields |
+| `503` | Assessment worker unavailable (reserved) |
 
 ---
 

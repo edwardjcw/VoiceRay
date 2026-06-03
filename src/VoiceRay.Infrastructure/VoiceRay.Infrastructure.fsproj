@@ -11,9 +11,13 @@
   <ItemGroup>
     <Compile Include="SpeechConfiguration.fs" />
     <Compile Include="PiperOptions.fs" />
+    <Compile Include="AlignmentOptions.fs" />
     <Compile Include="WavDuration.fs" />
+    <Compile Include="AudioNormalizer.fs" />
     <Compile Include="PiperTts.fs" />
     <Compile Include="ReferenceService.fs" />
+    <Compile Include="OssAlignment.fs" />
+    <Compile Include="AnalyzeService.fs" />
   </ItemGroup>
 
   <ItemGroup>

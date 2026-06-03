@@ -18,8 +18,11 @@ let main args =
     builder.Services.AddOpenApi() |> ignore
 
     let piperOptions = PiperOptions.load builder.Configuration builder.Environment.ContentRootPath
+    let alignmentOptions = AlignmentOptions.load builder.Configuration
     builder.Services.AddSingleton(piperOptions) |> ignore
+    builder.Services.AddSingleton(alignmentOptions) |> ignore
     builder.Services.AddSingleton<ReferenceService>() |> ignore
+    builder.Services.AddSingleton<AnalyzeService>() |> ignore
 
     let app = builder.Build()
 

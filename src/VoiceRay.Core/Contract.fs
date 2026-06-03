@@ -81,6 +81,19 @@ type ReferenceResponse =
       [<JsonPropertyName("ipaDisplay")>]
       IpaDisplay: string }
 
+/// OSS alignment metadata for analyze UI (device banner, engine path).
+type AnalyzeMetadata =
+    { [<JsonPropertyName("alignmentEngine")>]
+      AlignmentEngine: string
+      [<JsonPropertyName("computeDevice")>]
+      ComputeDevice: string
+      [<JsonPropertyName("deviceBanner")>]
+      DeviceBanner: string
+      [<JsonPropertyName("sampleRateHz")>]
+      SampleRateHz: int
+      [<JsonPropertyName("channels")>]
+      Channels: int }
+
 /// `POST /api/v1/analyze` JSON response (multipart request; see docs/api.md).
 type AnalyzeResponse =
     { [<JsonPropertyName("phonemes")>]
@@ -90,7 +103,9 @@ type AnalyzeResponse =
       [<JsonPropertyName("scores")>]
       Scores: PhonemeScore list
       [<JsonPropertyName("audioEcho")>]
-      AudioEcho: string option }
+      AudioEcho: string option
+      [<JsonPropertyName("metadata")>]
+      Metadata: AnalyzeMetadata }
 
 /// `POST /api/v1/compare` request body.
 type CompareRequest =

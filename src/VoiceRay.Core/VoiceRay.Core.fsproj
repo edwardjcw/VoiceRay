@@ -11,7 +11,10 @@
     <Compile Include="ContractJson.fs" />
     <Compile Include="G2pStub.fs" />
     <Compile Include="PoseMap.fs" />
+    <Compile Include="ComputeDevice.fs" />
+    <Compile Include="AnalyzeScoring.fs" />
     <Compile Include="ReferencePipeline.fs" />
+    <Compile Include="AnalyzePipeline.fs" />
   </ItemGroup>
 
 </Project>
