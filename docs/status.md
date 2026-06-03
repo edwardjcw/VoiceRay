@@ -79,7 +79,7 @@ Standard pedagogical set (varied places/manners):
 
 **Active:** KAN-54 (W7 frontend)
 
-**Completed:** KAN-47–53 on `feature/voiceray-mvp` @ `8aa67f7`; KAN-55 on `feature/w8-docs-mfa` (commit pending merge)
+**Completed:** KAN-47–53 on `feature/voiceray-mvp` @ `8aa67f7`; KAN-55 on `feature/w8-docs-mfa` @ `a82c1b2`
 
 **Proof queue:** integration **32 passed** (post-W6 merge)
 
@@ -133,6 +133,7 @@ Standard pedagogical set (varied places/manners):
 | Item | Status |
 | ---- | ------ |
 | Branch | `feature/w8-docs-mfa` (from `feature/voiceray-mvp`) |
+| Commit | `a82c1b2` |
 | Pre-work `dotnet test` / `npm test` | **N/A** — docs + Docker stub only; no test slot |
 | Post-work `dotnet test` / `npm test` | **N/A** — no application code changed |
 | UI/API validation | **N/A** — documentation and `workers/mfa/` stub; API contract unchanged |
