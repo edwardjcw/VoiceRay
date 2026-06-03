@@ -4,7 +4,7 @@ overview: Open-source hybrid app with an F# .NET 10 backend (phonetics, TTS, ali
 todos:
   - id: scaffold-solution
     content: Scaffold .NET 10 solution (VoiceRay.Api, VoiceRay.Core, VoiceRay.Infrastructure) + Vite JS client, MIT license, CI
-    status: pending
+    status: completed
   - id: vocal-tract-svg
     content: Trace reference cutout into layered SVG (lips, jaw, tongue, velum, static anatomy); JS ArticulatoryPlayer with morph/tween
     status: pending

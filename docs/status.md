@@ -46,7 +46,7 @@ Standard pedagogical set (varied places/manners):
 
 | ID | Jira | Branch | Status | Notes |
 | -- | ---- | ------ | ------ | ----- |
-| scaffold-solution | KAN-48 | `feature/w1-scaffold` | in_progress | Phase 0 |
+| scaffold-solution | KAN-48 | `feature/w1-scaffold` | done | Phase 0 committed (`fb76de2`); merge to `feature/voiceray-mvp` pending coordinator |
 | vocal-tract-svg | KAN-50 | `feature/w3-vocal-tract-svg` | pending | Needs W1 client folder |
 | api-contract | KAN-49 | `feature/w2-api-contract` | pending | After W1 |
 | backend-reference | KAN-51 | `feature/w4-reference-pipeline` | pending | Piper from W0 |
@@ -59,7 +59,7 @@ Standard pedagogical set (varied places/manners):
 
 | Phase | Status | Success criteria (from plan) |
 | ----- | ------ | ------------------------------ |
-| 0 Foundation | in_progress | .NET 10 + Vite + CI + MIT + reference.png |
+| 0 Foundation | done | .NET 10 + Vite + CI + MIT + reference.png (KAN-48) |
 | 1 Reference + SVG | pending | Hear reference; sagittal animates demo words |
 | 2 Record + replay | pending | Analyze WAV; user pose differs on mispronunciation |
 | 3 Compare + coaching | pending | Ghost overlay + coaching text |
@@ -84,7 +84,7 @@ Standard pedagogical set (varied places/manners):
 
 **Next queue:** KAN-49, KAN-50 (parallel after W1 merges)
 
-**Proof queue:** empty (baseline `dotnet test` after W1 scaffold lands on integration branch)
+**Proof queue:** baseline green on `feature/w1-scaffold` (await merge to `feature/voiceray-mvp`)
 
 **Integration queue:** merge `feature/w0-models` and `feature/w1-scaffold` → `feature/voiceray-mvp` when each is proof-green
 
@@ -92,10 +92,10 @@ Standard pedagogical set (varied places/manners):
 
 | Gate | Pre-work | Post-work |
 | ---- | -------- | --------- |
-| `dotnet build` | — | — |
-| `dotnet test` | — | — |
-| `npm run build` (client/) | — | — |
-| Playwright | — | — |
+| `dotnet build` | N/A (greenfield) | KAN-48: 0 errors, 0 warnings (Release) |
+| `dotnet test` | N/A (greenfield) | KAN-48: 4 passed, 0 failed |
+| `npm run build` (client/) | N/A | KAN-48: pass |
+| Playwright | N/A | N/A (W7) |
 
 ## Merge order (into `feature/voiceray-mvp`)
 
@@ -115,6 +115,18 @@ Standard pedagogical set (varied places/manners):
 | ID | Blocker | Owner | Next action |
 | -- | ------- | ----- | ----------- |
 | — | None | — | — |
+
+## KAN-48 commit gate (feature/w1-scaffold)
+
+| Item | Status |
+| ---- | ------ |
+| Branch | `feature/w1-scaffold` |
+| Commit | `fb76de2` (+ docs follow-up) |
+| Pre-work `dotnet test` | N/A (greenfield) |
+| Post-work `dotnet build` / `dotnet test` | Pass (0 warnings) |
+| Post-work `npm run build` / `npm test` | Pass |
+| UI/API validation | `/api/v1/health` + client stub |
+| PR | Deferred (merge to `feature/voiceray-mvp` first) |
 
 ## Agent notes
 
