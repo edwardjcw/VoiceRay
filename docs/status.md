@@ -133,6 +133,7 @@ Standard pedagogical set (varied places/manners):
 | Item | Status |
 | ---- | ------ |
 | Branch | `feature/w4-reference-pipeline` (from `feature/voiceray-mvp`) |
+| Commit | `e20f715` |
 | Pre-work `dotnet build` | Pass (0 warnings) |
 | Post-work `dotnet build` / `dotnet test` | Pass (16 tests, 0 warnings) |
 | UI/API validation | `POST /api/v1/reference` live; analyze/compare remain 501; Piper + demo lexicon |
