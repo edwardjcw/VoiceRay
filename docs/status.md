@@ -46,7 +46,7 @@ Standard pedagogical set (varied places/manners):
 
 | ID | Jira | Branch | Status | Notes |
 | -- | ---- | ------ | ------ | ----- |
-| scaffold-solution | KAN-48 | `feature/w1-scaffold` | done | Phase 0 committed (`fb76de2`); merge to `feature/voiceray-mvp` pending coordinator |
+| scaffold-solution | KAN-48 | `feature/w1-scaffold` | done | Merged to `feature/voiceray-mvp` @ `ed14360` |
 | vocal-tract-svg | KAN-50 | `feature/w3-vocal-tract-svg` | pending | Needs W1 client folder |
 | api-contract | KAN-49 | `feature/w2-api-contract` | pending | After W1 |
 | backend-reference | KAN-51 | `feature/w4-reference-pipeline` | pending | Piper from W0 |
@@ -79,14 +79,15 @@ Standard pedagogical set (varied places/manners):
 
 **Active (max 2):**
 
-1. KAN-47 (W0 models) — `feature/w0-models`
-2. KAN-48 (W1 scaffold) — `feature/w1-scaffold`
+1. KAN-47 (W0 models) — `feature/w0-models` (resume; no commits yet)
+2. KAN-49 (W2 API contract) — `feature/w2-api-contract`
+3. KAN-50 (W3 vocal tract SVG) — `feature/w3-vocal-tract-svg`
 
-**Next queue:** KAN-49, KAN-50 (parallel after W1 merges)
+**Completed this wave:** KAN-48 merged → `feature/voiceray-mvp` @ `ed14360`
 
-**Proof queue:** baseline green on `feature/w1-scaffold` (await merge to `feature/voiceray-mvp`)
+**Proof queue:** re-run `dotnet test` on integration branch after next merge batch
 
-**Integration queue:** merge `feature/w0-models` and `feature/w1-scaffold` → `feature/voiceray-mvp` when each is proof-green
+**Integration queue:** `feature/w0-models` → `feature/voiceray-mvp` when W0 commits land
 
 ## Gate evidence
 
@@ -99,8 +100,8 @@ Standard pedagogical set (varied places/manners):
 
 ## Merge order (into `feature/voiceray-mvp`)
 
-1. `feature/w1-scaffold` (foundation)
-2. `feature/w0-models` (can parallel; merge after or with W1 if no conflicts)
+1. ~~`feature/w1-scaffold`~~ **merged** @ `ed14360`
+2. `feature/w0-models` (in progress)
 3. `feature/w2-api-contract`
 4. `feature/w3-vocal-tract-svg` (parallel with W2 if hot-spots OK)
 5. `feature/w4-reference-pipeline`
