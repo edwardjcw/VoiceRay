@@ -70,20 +70,18 @@ Standard pedagogical set (varied places/manners):
 | Asset | Status | Path / notes |
 | ----- | ------ | ------------- |
 | Vocal tract reference | **done** | `assets/vocal-tract/reference.png` |
-| Piper binary + en-US voice | pending | `models/piper/` (KAN-47) |
-| Whisper cache | pending audit | Reuse `%USERPROFILE%\.cache\whisper\` (base.en, medium.en from CloneMyVoice) |
+| Piper binary + en-US voice | **done** (local) | `models/piper/` via `scripts/provision-piper.ps1` (~97 MB); gitignored |
+| Whisper cache | **reuse** | `%USERPROFILE%\.cache\whisper\` (~1.73 GB); not copied — see `docs/providers.md` |
 | MFA Docker / models | pending | `workers/mfa/` (KAN-55, Phase 4) |
 | CMU / G2P lexicon | pending | `VoiceRay.Core` (W4) |
 
 ## WIP policy (current wave)
 
-**Active:** KAN-47 (W0 models) — merge `feature/w0-models` when ready
+**Active:** KAN-51 (W4 reference pipeline) — next
 
-**Completed:** KAN-48 @ `ed14360`; KAN-49 @ `cbcd6bb`; KAN-50 @ `6418dd8`
+**Completed:** KAN-47 (W0 @ `0874ebc` files on integration); KAN-48–50 merged
 
-**Proof queue:** `dotnet test` on integration branch after W0 merge
-
-**Integration queue:** `feature/w0-models` → `feature/voiceray-mvp`
+**Proof queue:** `dotnet test` on integration after W4 slice
 
 ## Gate evidence
 
@@ -98,7 +96,7 @@ Standard pedagogical set (varied places/manners):
 ## Merge order (into `feature/voiceray-mvp`)
 
 1. ~~`feature/w1-scaffold`~~ @ `ed14360`
-2. `feature/w0-models` (in progress)
+2. ~~`feature/w0-models`~~ W0 assets @ `0874ebc` (cherry-picked files, not branch merge)
 3. ~~`feature/w2-api-contract`~~ @ `cbcd6bb`
 4. ~~`feature/w3-vocal-tract-svg`~~ @ `6418dd8`
 5. `feature/w4-reference-pipeline`
@@ -113,6 +111,14 @@ Standard pedagogical set (varied places/manners):
 | ID | Blocker | Owner | Next action |
 | -- | ------- | ----- | ----------- |
 | — | None | — | — |
+
+## KAN-47 commit gate (feature/w0-models)
+
+| Item | Status |
+| ---- | ------ |
+| Commit | `0874ebc` (NOTICE, `scripts/provision-piper.ps1`, `docs/providers.md`) |
+| Piper smoke | `piper.exe --version` → 1.2.0 |
+| Whisper | Cache audited; reuse only |
 
 ## KAN-49 commit gate (feature/w2-api-contract)
 
