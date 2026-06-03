@@ -53,7 +53,7 @@ Standard pedagogical set (varied places/manners):
 | backend-analyze | KAN-52 | `feature/w5-analyze` | done | Merged @ `4ead801` |
 | backend-compare | KAN-53 | `feature/w6-compare` | done | Merged @ `8aa67f7` |
 | frontend-flows | KAN-54 | `feature/w7-frontend` | pending | Playwright required |
-| docs-multilingual | KAN-55 | `feature/w8-docs-mfa` | done | Phase 4 docs + MFA Docker stub |
+| docs-multilingual | KAN-55 | `feature/w8-docs-mfa` | done | Merged @ `1e34b3c` — architecture, articulatory-model, MFA stub |
 
 ## Phase checklist
 
@@ -79,7 +79,7 @@ Standard pedagogical set (varied places/manners):
 
 **Active:** KAN-54 (W7 frontend)
 
-**Completed:** KAN-47–53 on `feature/voiceray-mvp` @ `8aa67f7`; KAN-55 on `feature/w8-docs-mfa` @ `a82c1b2`
+**Completed:** KAN-47–55 backend/docs on `feature/voiceray-mvp` @ `1e34b3c` (W7 frontend in progress — uncommitted client WIP on integration checkout)
 
 **Proof queue:** integration **32 passed** (post-W6 merge)
 
@@ -103,7 +103,7 @@ Standard pedagogical set (varied places/manners):
 6. ~~`feature/w5-analyze`~~ @ `4ead801`
 7. ~~`feature/w6-compare`~~ @ `8aa67f7`
 8. `feature/w7-frontend`
-9. `feature/w8-docs-mfa`
+9. ~~`feature/w8-docs-mfa`~~ @ `1e34b3c`
 10. Single PR → `main`
 
 ## Blockers
