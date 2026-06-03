@@ -13,6 +13,9 @@
     <Compile Include="PoseMap.fs" />
     <Compile Include="ComputeDevice.fs" />
     <Compile Include="AnalyzeScoring.fs" />
+    <Compile Include="PhonemeDiff.fs" />
+    <Compile Include="CoachingRules.fs" />
+    <Compile Include="ComparePipeline.fs" />
     <Compile Include="ReferencePipeline.fs" />
     <Compile Include="AnalyzePipeline.fs" />
   </ItemGroup>

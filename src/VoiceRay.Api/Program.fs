@@ -23,6 +23,7 @@ let main args =
     builder.Services.AddSingleton(alignmentOptions) |> ignore
     builder.Services.AddSingleton<ReferenceService>() |> ignore
     builder.Services.AddSingleton<AnalyzeService>() |> ignore
+    builder.Services.AddSingleton<CompareService>() |> ignore
 
     let app = builder.Build()
 

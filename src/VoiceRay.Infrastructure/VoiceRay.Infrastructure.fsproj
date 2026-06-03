@@ -18,6 +18,7 @@
     <Compile Include="ReferenceService.fs" />
     <Compile Include="OssAlignment.fs" />
     <Compile Include="AnalyzeService.fs" />
+    <Compile Include="CompareService.fs" />
   </ItemGroup>
 
   <ItemGroup>

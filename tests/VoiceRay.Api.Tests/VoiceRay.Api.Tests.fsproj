@@ -10,6 +10,7 @@
     <Compile Include="..\VoiceRay.Core.Tests\WavTestHelpers.fs" />
     <Compile Include="ReferenceServiceTests.fs" />
     <Compile Include="AnalyzeServiceTests.fs" />
+    <Compile Include="CompareServiceTests.fs" />
   </ItemGroup>
 
   <ItemGroup>

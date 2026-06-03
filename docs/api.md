@@ -4,7 +4,7 @@ Base path: `/api/v1`. JSON bodies use **camelCase** property names unless noted.
 
 OpenAPI document (development): `GET /openapi/v1.json` when the API runs with OpenAPI enabled.
 
-Implementation types live in `VoiceRay.Core` (`Contract.fs`). `POST /api/v1/reference` is implemented (W4, Piper + G2P stub + keyframes). `POST /api/v1/analyze` is implemented (W5, WAV normalize + OSS Whisper/MFA alignment stubs). `compare` remains a stub (`501`) until W6.
+Implementation types live in `VoiceRay.Core` (`Contract.fs`). `POST /api/v1/reference` is implemented (W4, Piper + G2P stub + keyframes). `POST /api/v1/analyze` is implemented (W5, WAV normalize + OSS Whisper/MFA alignment stubs). `POST /api/v1/compare` is implemented (W6, greedy IPA alignment + en-US coaching rules).
 
 ---
 
@@ -198,8 +198,7 @@ Diffs reference vs user phoneme sequences and returns alignment segments plus co
 
 | Status | When |
 | ------ | ---- |
-| `400` | Empty phoneme lists or locale mismatch |
-| `501` | Stub (pre-W6) |
+| `400` | Empty phoneme lists, missing locale, or unsupported locale (MVP: `en-US` only) |
 
 ---
 

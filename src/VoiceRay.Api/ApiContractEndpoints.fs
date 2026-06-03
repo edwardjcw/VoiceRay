@@ -8,7 +8,7 @@ open Microsoft.AspNetCore.Http
 open VoiceRay.Core
 open VoiceRay.Infrastructure
 
-/// Contract endpoints — reference (W4), analyze (W5); compare stub until W6.
+/// Contract endpoints — reference (W4), analyze (W5), compare (W6).
 module ApiContractEndpoints =
     let notImplemented (name: string) : IResult =
         Results.Json(
@@ -70,6 +70,17 @@ module ApiContractEndpoints =
                             statusCode = StatusCodes.Status400BadRequest)
         }
 
+    let handleCompare (request: CompareRequest) (service: CompareService) : IResult =
+        match service.Compare request with
+        | Ok response ->
+            Results.Content(ContractJson.serialize response, "application/json")
+        | Error(CompareServiceError.InvalidRequest message) ->
+            Results.Json({| error = message |}, statusCode = StatusCodes.Status400BadRequest)
+        | Error CompareServiceError.UnsupportedLocale ->
+            Results.Json(
+                {| error = "locale must be en-US for compare (demo MVP)." |},
+                statusCode = StatusCodes.Status400BadRequest)
+
     /// Registers `POST /api/v1/reference`, `analyze`, and `compare` with OpenAPI metadata.
     let mapContractEndpoints (app: WebApplication) =
         app.MapPost(
@@ -84,7 +95,7 @@ module ApiContractEndpoints =
 
         app.MapPost(
             "/api/v1/compare",
-            Func<CompareRequest, IResult>(fun _ -> notImplemented "compare"))
+            Func<CompareRequest, CompareService, IResult>(handleCompare))
         |> ignore
 
         app
