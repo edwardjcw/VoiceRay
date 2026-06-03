@@ -22,7 +22,7 @@ todos:
     status: completed
   - id: frontend-flows
     content: JS practice/record/compare screens, MediaRecorder, audio playback synced to backend keyframes
-    status: pending
+    status: completed
   - id: docs-multilingual
     content: docs/architecture.md, providers.md, articulatory-model.md; locale matrix; optional MFA Docker (Phase 4)
     status: completed
