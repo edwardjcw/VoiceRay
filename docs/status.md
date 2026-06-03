@@ -57,7 +57,7 @@ pat, pet, pit, pot, put, cat, dog, think, red, ship — see plan for teaching fo
 
 ## Merge order (into `feature/voiceray-mvp`)
 
-All ticket branches merged. Release step: PR → `main`.
+All ticket branches merged. Release PR: https://github.com/edwardjcw/VoiceRay/pull/1 → `main`.
 
 ## Blockers
 
