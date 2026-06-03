@@ -46,9 +46,9 @@ Standard pedagogical set (varied places/manners):
 
 | ID | Jira | Branch | Status | Notes |
 | -- | ---- | ------ | ------ | ----- |
-| scaffold-solution | KAN-48 | `feature/w1-scaffold` | done | Merged to `feature/voiceray-mvp` @ `ed14360` |
-| vocal-tract-svg | KAN-50 | `feature/w3-vocal-tract-svg` | done | Merged @ `6418dd8` (`8a2e6c5`) |
-| api-contract | KAN-49 | `feature/w2-api-contract` | pending | After W1 |
+| scaffold-solution | KAN-48 | `feature/w1-scaffold` | done | Merged @ `ed14360` |
+| vocal-tract-svg | KAN-50 | `feature/w3-vocal-tract-svg` | done | Merged @ `6418dd8` |
+| api-contract | KAN-49 | `feature/w2-api-contract` | done | Merged @ `cbcd6bb` |
 | backend-reference | KAN-51 | `feature/w4-reference-pipeline` | pending | Piper from W0 |
 | backend-analyze | KAN-52 | `feature/w5-analyze` | pending | MFA/Whisper OSS |
 | backend-compare | KAN-53 | `feature/w6-compare` | pending | Phase 3 |
@@ -77,30 +77,30 @@ Standard pedagogical set (varied places/manners):
 
 ## WIP policy (current wave)
 
-**Active (max 2):** KAN-47 (W0 models), KAN-49 (W2 API contract)
+**Active:** KAN-47 (W0 models) — merge `feature/w0-models` when ready
 
-**Completed this wave:** KAN-48 @ `ed14360`; KAN-50 merged @ `6418dd8`
+**Completed:** KAN-48 @ `ed14360`; KAN-49 @ `cbcd6bb`; KAN-50 @ `6418dd8`
 
-**Proof queue:** re-run `dotnet test` on integration branch after next merge batch
+**Proof queue:** `dotnet test` on integration branch after W0 merge
 
-**Integration queue:** `feature/w0-models` → `feature/voiceray-mvp` when W0 commits land
+**Integration queue:** `feature/w0-models` → `feature/voiceray-mvp`
 
 ## Gate evidence
 
 | Gate | Pre-work | Post-work |
 | ---- | -------- | --------- |
-| `dotnet build` | N/A (greenfield) | KAN-48: 0 errors, 0 warnings (Release) |
-| `dotnet test` | N/A (greenfield) | KAN-48: 4 passed, 0 failed |
-| `npm run build` (client/) | N/A | KAN-48: pass; KAN-50: pass |
+| `dotnet build` | N/A; KAN-49: 0 warnings | KAN-48/49: pass (Release) |
+| `dotnet test` | N/A; KAN-49: 7 passed | KAN-48: 4 passed |
+| `npm run build` (client/) | N/A | KAN-48, KAN-50: pass |
 | `npm run test` (client/) | N/A | KAN-50: 6 passed |
 | Playwright | N/A | N/A (W7) |
 
 ## Merge order (into `feature/voiceray-mvp`)
 
-1. ~~`feature/w1-scaffold`~~ **merged** @ `ed14360`
+1. ~~`feature/w1-scaffold`~~ @ `ed14360`
 2. `feature/w0-models` (in progress)
-3. `feature/w2-api-contract`
-4. ~~`feature/w3-vocal-tract-svg`~~ **merged** @ `6418dd8`
+3. ~~`feature/w2-api-contract`~~ @ `cbcd6bb`
+4. ~~`feature/w3-vocal-tract-svg`~~ @ `6418dd8`
 5. `feature/w4-reference-pipeline`
 6. `feature/w5-analyze`
 7. `feature/w6-compare`
@@ -114,29 +114,28 @@ Standard pedagogical set (varied places/manners):
 | -- | ------- | ----- | ----------- |
 | — | None | — | — |
 
+## KAN-49 commit gate (feature/w2-api-contract)
+
+| Item | Status |
+| ---- | ------ |
+| Commit | `cbcd6bb` |
+| Post-work `dotnet build` / `dotnet test` | Pass (7 tests, 0 warnings) |
+| UI/API validation | `docs/api.md` + 501 stubs; OpenAPI `/openapi/v1.json` (Development) |
+
 ## KAN-50 commit gate (feature/w3-vocal-tract-svg)
 
 | Item | Status |
 | ---- | ------ |
-| Branch | `feature/w3-vocal-tract-svg` (from `feature/voiceray-mvp`) |
 | Commit | `8a2e6c5` |
-| Pre-work `npm run test` | Skipped — coordinator test-slot; frontend-only leaf |
-| Post-work `npm run build` / `npm run test` | Pass (6 tests, 0 failures) |
-| UI/API validation | N/A — SVG rig + player unit tests; no API shape change |
-| PR | None (per epic policy) |
-| Deliverables | `client/public/vocal-tract.svg`, `client/src/animation/SagittalPlayer.js`, `client/tests/sagittal-player.test.js` |
+| Post-work `npm run build` / `npm run test` | Pass (6 tests) |
 
 ## KAN-48 commit gate (feature/w1-scaffold)
 
 | Item | Status |
 | ---- | ------ |
-| Branch | `feature/w1-scaffold` |
-| Commit | `fb76de2` (+ docs follow-up) |
-| Pre-work `dotnet test` | N/A (greenfield) |
-| Post-work `dotnet build` / `dotnet test` | Pass (0 warnings) |
+| Commit | `ed14360` |
+| Post-work `dotnet build` / `dotnet test` | Pass |
 | Post-work `npm run build` / `npm test` | Pass |
-| UI/API validation | `/api/v1/health` + client stub |
-| PR | Deferred (merge to `feature/voiceray-mvp` first) |
 
 ## Agent notes
 

@@ -6,6 +6,9 @@
 
   <ItemGroup>
     <Compile Include="ApplicationInfo.fs" />
+    <Compile Include="Contract.fs" />
+    <Compile Include="CompareSegmentJsonConverter.fs" />
+    <Compile Include="ContractJson.fs" />
   </ItemGroup>
 
 </Project>
