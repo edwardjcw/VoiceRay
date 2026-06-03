@@ -133,6 +133,7 @@ Standard pedagogical set (varied places/manners):
 | Item | Status |
 | ---- | ------ |
 | Branch | `feature/w7-frontend` (from `feature/voiceray-mvp`) |
+| Commit | `1018650` |
 | Pre-work `npm run build` / `npm run test` | Pass (6 unit, 0 warnings) |
 | Post-work `npm run build` / `npm run test` | Pass (9 unit + 4 Playwright, 0 warnings) |
 | UI/API validation | Practice/record/compare call `/reference`, `/analyze`, `/compare`; `deviceBanner` visible after analyze; ghost compare overlay; SagittalPlayer audio sync |
