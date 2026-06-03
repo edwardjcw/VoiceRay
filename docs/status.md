@@ -121,7 +121,7 @@ Standard pedagogical set (varied places/manners):
 | Item | Status |
 | ---- | ------ |
 | Branch | `feature/w3-vocal-tract-svg` (from `feature/voiceray-mvp`) |
-| Commit | `4189f06` |
+| Commit | `8a2e6c5` |
 | Pre-work `npm run test` | Skipped — coordinator test-slot; frontend-only leaf |
 | Post-work `npm run build` / `npm run test` | Pass (6 tests, 0 failures) |
 | UI/API validation | N/A — SVG rig + player unit tests; no API shape change |
