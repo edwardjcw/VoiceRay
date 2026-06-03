@@ -47,8 +47,8 @@ Standard pedagogical set (varied places/manners):
 | ID | Jira | Branch | Status | Notes |
 | -- | ---- | ------ | ------ | ----- |
 | scaffold-solution | KAN-48 | `feature/w1-scaffold` | done | Merged to `feature/voiceray-mvp` @ `ed14360` |
-| vocal-tract-svg | KAN-50 | `feature/w3-vocal-tract-svg` | pending | Needs W1 client folder |
-| api-contract | KAN-49 | `feature/w2-api-contract` | pending | After W1 |
+| vocal-tract-svg | KAN-50 | `feature/w3-vocal-tract-svg` | done | Merged @ `6418dd8` (`8a2e6c5`) |
+| api-contract | KAN-49 | `feature/w2-api-contract` | done | `docs/api.md`, Core contract types, OpenAPI stubs |
 | backend-reference | KAN-51 | `feature/w4-reference-pipeline` | pending | Piper from W0 |
 | backend-analyze | KAN-52 | `feature/w5-analyze` | pending | MFA/Whisper OSS |
 | backend-compare | KAN-53 | `feature/w6-compare` | pending | Phase 3 |
@@ -93,9 +93,10 @@ Standard pedagogical set (varied places/manners):
 
 | Gate | Pre-work | Post-work |
 | ---- | -------- | --------- |
-| `dotnet build` | N/A (greenfield) | KAN-48: 0 errors, 0 warnings (Release) |
-| `dotnet test` | N/A (greenfield) | KAN-48: 4 passed, 0 failed |
-| `npm run build` (client/) | N/A | KAN-48: pass |
+| `dotnet build` | KAN-49: 0 errors, 0 warnings (Release) | KAN-48: 0 errors, 0 warnings (Release) |
+| `dotnet test` | KAN-49: 7 passed, 0 failed | KAN-48: 4 passed, 0 failed |
+| `npm run build` (client/) | N/A | KAN-48: pass; KAN-50: pass |
+| `npm run test` (client/) | N/A | KAN-50: 6 passed |
 | Playwright | N/A | N/A (W7) |
 
 ## Merge order (into `feature/voiceray-mvp`)
@@ -116,6 +117,17 @@ Standard pedagogical set (varied places/manners):
 | ID | Blocker | Owner | Next action |
 | -- | ------- | ----- | ----------- |
 | — | None | — | — |
+
+## KAN-49 commit gate (feature/w2-api-contract)
+
+| Item | Status |
+| ---- | ------ |
+| Branch | `feature/w2-api-contract` (from `feature/voiceray-mvp`) |
+| Pre-work `dotnet build` | Pass (0 warnings) |
+| Post-work `dotnet build` / `dotnet test` | Pass (7 tests, 0 warnings) |
+| Post-work `npm run build` | N/A (no client changes) |
+| UI/API validation | Contract docs + 501 stubs; OpenAPI at `/openapi/v1.json` (Development) |
+| PR | None (per coordinator; merge to `feature/voiceray-mvp` later) |
 
 ## KAN-48 commit gate (feature/w1-scaffold)
 
