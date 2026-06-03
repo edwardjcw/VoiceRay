@@ -133,7 +133,7 @@ Standard pedagogical set (varied places/manners):
 | Item | Status |
 | ---- | ------ |
 | Branch | `feature/w5-analyze` (from `feature/voiceray-mvp`) |
-| Commit | _(pending this run)_ |
+| Commit | `4597300` |
 | Pre-work `dotnet build` / `dotnet test` | Pass (16 tests, 0 warnings) |
 | Post-work `dotnet build` / `dotnet test` | Pass (22 tests, 0 warnings) |
 | UI/API validation | `POST /api/v1/analyze` multipart; `docs/api.md` metadata; compare still 501 |
