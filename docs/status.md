@@ -53,7 +53,7 @@ Standard pedagogical set (varied places/manners):
 | backend-analyze | KAN-52 | `feature/w5-analyze` | done | Merged @ `4ead801` |
 | backend-compare | KAN-53 | `feature/w6-compare` | done | Merged @ `8aa67f7` |
 | frontend-flows | KAN-54 | `feature/w7-frontend` | pending | Playwright required |
-| docs-multilingual | KAN-55 | `feature/w8-docs-mfa` | pending | Phase 4 |
+| docs-multilingual | KAN-55 | `feature/w8-docs-mfa` | done | Phase 4 docs + MFA Docker stub |
 
 ## Phase checklist
 
@@ -62,8 +62,8 @@ Standard pedagogical set (varied places/manners):
 | 0 Foundation | done | .NET 10 + Vite + CI + MIT + reference.png (KAN-48) |
 | 1 Reference + SVG | done | KAN-50 SVG + KAN-51 `/reference` (integration @ `8c63e3f`) |
 | 2 Record + replay | in progress | KAN-52 analyze merged; W7 UI replay pending |
-| 3 Compare + coaching | in progress | KAN-53 `/compare` on branch; W7 ghost overlay + UI pending |
-| 4 Multilingual + MFA | pending | Locale packs + MFA Docker + PWA |
+| 3 Compare + coaching | in progress | KAN-53 merged; W7 ghost overlay + UI pending |
+| 4 Multilingual + MFA | in progress | Docs + `workers/mfa/` stub (KAN-55); locale packs + PWA pending |
 
 ## Model & asset inventory
 
@@ -72,14 +72,14 @@ Standard pedagogical set (varied places/manners):
 | Vocal tract reference | **done** | `assets/vocal-tract/reference.png` |
 | Piper binary + en-US voice | **done** (local) | `models/piper/` via `scripts/provision-piper.ps1` (~97 MB); gitignored |
 | Whisper cache | **reuse** | `%USERPROFILE%\.cache\whisper\` (~1.73 GB); not copied — see `docs/providers.md` |
-| MFA Docker / models | pending | `workers/mfa/` (KAN-55, Phase 4) |
+| MFA Docker / models | **stub** | `workers/mfa/` Docker compose + health (KAN-55); acoustic models not bundled |
 | CMU / G2P lexicon | **stub** | `VoiceRay.Core/G2pStub.fs` — 10 demo words `en-US` |
 
 ## WIP policy (current wave)
 
-**Active:** KAN-54 (W7 frontend), KAN-55 (W8 docs/MFA)
+**Active:** KAN-54 (W7 frontend)
 
-**Completed:** KAN-47–53 on `feature/voiceray-mvp` @ `8aa67f7`
+**Completed:** KAN-47–53 on `feature/voiceray-mvp` @ `8aa67f7`; KAN-55 on `feature/w8-docs-mfa` (commit pending merge)
 
 **Proof queue:** integration **32 passed** (post-W6 merge)
 
@@ -127,6 +127,17 @@ Standard pedagogical set (varied places/manners):
 | Commit | `cbcd6bb` |
 | Post-work `dotnet build` / `dotnet test` | Pass (7 tests, 0 warnings) |
 | UI/API validation | `docs/api.md` + 501 stubs; OpenAPI `/openapi/v1.json` (Development) |
+
+## KAN-55 commit gate (feature/w8-docs-mfa)
+
+| Item | Status |
+| ---- | ------ |
+| Branch | `feature/w8-docs-mfa` (from `feature/voiceray-mvp`) |
+| Pre-work `dotnet test` / `npm test` | **N/A** — docs + Docker stub only; no test slot |
+| Post-work `dotnet test` / `npm test` | **N/A** — no application code changed |
+| UI/API validation | **N/A** — documentation and `workers/mfa/` stub; API contract unchanged |
+| Deliverables | `docs/architecture.md`, `docs/articulatory-model.md`, `docs/providers.md` (expanded), `workers/mfa/` (Dockerfile, compose, stub server), locale matrix in architecture.md |
+| PR | **None** (per coordinator: commit on branch only) |
 
 ## KAN-53 commit gate (feature/w6-compare)
 
@@ -178,6 +189,7 @@ Standard pedagogical set (varied places/manners):
 
 ## Agent notes
 
-- **OSS speech config:** `Speech:Provider = Local` in appsettings; document Piper path in `docs/providers.md` (W8).
+- **OSS speech config:** `Speech:Provider = Local` in appsettings; Piper/MFA/Whisper paths in `docs/providers.md` (KAN-55).
+- **Architecture docs:** `docs/architecture.md`, `docs/articulatory-model.md`; locale matrix in architecture.md.
 - **Azure:** Deferred; do not add SDK calls requiring keys in this epic.
 - **Hot spots:** `.sln`, `VoiceRay.Core`, `VoiceRay.Api`, `client/vite.config`, `docs/status.md` (coordinator-owned reconciliation).

@@ -25,7 +25,7 @@ todos:
     status: pending
   - id: docs-multilingual
     content: docs/architecture.md, providers.md, articulatory-model.md; locale matrix; optional MFA Docker (Phase 4)
-    status: pending
+    status: completed
 ---
 
 # VoiceRay — F# backend + JS frontend plan
