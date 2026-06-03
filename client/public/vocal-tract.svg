@@ -1,9 +1,47 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 120" role="img" aria-label="Vocal tract placeholder">
-  <title>Vocal tract (Phase 1)</title>
-  <g id="outline">
-    <rect x="10" y="10" width="180" height="100" fill="none" stroke="#666" stroke-width="2"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 217 232" role="img" aria-label="Sagittal vocal tract">
+  <title>Vocal tract — layered rig (KAN-50)</title>
+  <defs>
+    <style>
+      .cavity { fill: #0a0a0a; }
+      .anatomy { fill: #8a8a8a; stroke: #1f1f1f; stroke-width: 1.2; stroke-linejoin: round; }
+      .outline-stroke { fill: none; stroke: #3a3a3a; stroke-width: 2; stroke-linejoin: round; }
+    </style>
+  </defs>
+  <!-- Cavities (oral / nasal / pharyngeal) — static -->
+  <g id="cavity" class="cavity">
+    <path d="M 8 18 L 52 6 L 58 42 L 48 78 L 38 98 L 32 118 L 36 142 L 52 168 L 88 178 L 128 172 L 168 158 L 198 132 L 206 88 L 200 48 L 178 22 L 140 8 L 96 6 Z"/>
+    <path d="M 38 98 L 48 78 L 72 72 L 108 68 L 142 72 L 162 82 L 168 98 L 160 118 L 142 132 L 108 138 L 72 136 L 52 128 Z"/>
+    <path d="M 168 98 L 198 108 L 206 132 L 200 168 L 182 198 L 158 212 L 128 218 L 98 214 L 72 200 L 58 178 L 52 152 L 58 128 Z"/>
   </g>
-  <g id="tongue">
-    <ellipse cx="90" cy="70" rx="35" ry="12" fill="#888"/>
+  <g id="palate" class="anatomy">
+    <path d="M 44 92 Q 78 58 118 62 Q 148 66 162 82 L 158 94 Q 132 78 98 76 Q 64 78 44 92 Z"/>
+  </g>
+  <g id="outline" class="outline-stroke">
+    <path d="M 6 24 Q 18 4 48 2 Q 72 0 82 18 Q 88 34 78 52 Q 68 68 52 78 Q 42 86 36 98"/>
+    <path d="M 198 28 L 208 120 L 204 188 Q 198 220 168 226 L 118 230 Q 78 228 58 210 Q 48 198 42 182"/>
+  </g>
+  <g id="jaw" class="anatomy">
+    <path d="M 36 104 Q 28 118 30 138 Q 34 162 48 182 Q 62 198 82 206 Q 102 212 118 210 L 122 198 Q 108 202 88 198 Q 68 192 54 178 Q 42 162 38 142 Q 36 124 36 104 Z"/>
+  </g>
+  <g id="teeth_upper" class="anatomy">
+    <path d="M 40 96 L 48 88 L 54 96 L 48 102 Z"/>
+  </g>
+  <g id="teeth_lower" class="anatomy">
+    <path d="M 42 112 L 50 106 L 56 114 L 50 120 Z"/>
+  </g>
+  <g id="lips_upper" class="anatomy">
+    <path d="M 32 98 Q 38 90 48 92 Q 56 94 52 100 Q 46 104 38 102 Q 32 100 32 98 Z"/>
+  </g>
+  <g id="lips_lower" class="anatomy">
+    <path d="M 34 108 Q 40 114 50 112 Q 58 110 54 118 Q 48 124 40 122 Q 34 116 34 108 Z"/>
+  </g>
+  <g id="tongue" class="anatomy">
+    <path d="M 48 108 Q 62 100 88 102 Q 118 106 132 118 Q 142 128 138 142 Q 132 156 108 162 Q 82 166 62 158 Q 48 150 44 136 Q 42 122 48 108 Z"/>
+  </g>
+  <g id="velum" class="anatomy">
+    <path d="M 152 82 Q 168 72 178 82 Q 186 94 182 108 Q 176 120 162 118 Q 154 110 152 96 Q 150 88 152 82 Z"/>
+  </g>
+  <g id="glottis_hint" class="anatomy" opacity="0.85">
+    <path d="M 172 188 Q 178 184 184 188 Q 178 192 172 188 Z"/>
   </g>
 </svg>

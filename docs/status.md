@@ -47,7 +47,7 @@ Standard pedagogical set (varied places/manners):
 | ID | Jira | Branch | Status | Notes |
 | -- | ---- | ------ | ------ | ----- |
 | scaffold-solution | KAN-48 | `feature/w1-scaffold` | done | Merged to `feature/voiceray-mvp` @ `ed14360` |
-| vocal-tract-svg | KAN-50 | `feature/w3-vocal-tract-svg` | pending | Needs W1 client folder |
+| vocal-tract-svg | KAN-50 | `feature/w3-vocal-tract-svg` | done | Layered SVG + SagittalPlayer + tests |
 | api-contract | KAN-49 | `feature/w2-api-contract` | pending | After W1 |
 | backend-reference | KAN-51 | `feature/w4-reference-pipeline` | pending | Piper from W0 |
 | backend-analyze | KAN-52 | `feature/w5-analyze` | pending | MFA/Whisper OSS |
@@ -60,7 +60,7 @@ Standard pedagogical set (varied places/manners):
 | Phase | Status | Success criteria (from plan) |
 | ----- | ------ | ------------------------------ |
 | 0 Foundation | done | .NET 10 + Vite + CI + MIT + reference.png (KAN-48) |
-| 1 Reference + SVG | pending | Hear reference; sagittal animates demo words |
+| 1 Reference + SVG | in progress | SVG rig done (KAN-50); reference audio/keyframes pending W4 |
 | 2 Record + replay | pending | Analyze WAV; user pose differs on mispronunciation |
 | 3 Compare + coaching | pending | Ghost overlay + coaching text |
 | 4 Multilingual + MFA | pending | Locale packs + MFA Docker + PWA |
@@ -81,9 +81,7 @@ Standard pedagogical set (varied places/manners):
 
 1. KAN-47 (W0 models) — `feature/w0-models` (resume; no commits yet)
 2. KAN-49 (W2 API contract) — `feature/w2-api-contract`
-3. KAN-50 (W3 vocal tract SVG) — `feature/w3-vocal-tract-svg`
-
-**Completed this wave:** KAN-48 merged → `feature/voiceray-mvp` @ `ed14360`
+**Completed this wave:** KAN-48 merged → `feature/voiceray-mvp` @ `ed14360`; KAN-50 committed on `feature/w3-vocal-tract-svg`
 
 **Proof queue:** re-run `dotnet test` on integration branch after next merge batch
 
@@ -95,7 +93,8 @@ Standard pedagogical set (varied places/manners):
 | ---- | -------- | --------- |
 | `dotnet build` | N/A (greenfield) | KAN-48: 0 errors, 0 warnings (Release) |
 | `dotnet test` | N/A (greenfield) | KAN-48: 4 passed, 0 failed |
-| `npm run build` (client/) | N/A | KAN-48: pass |
+| `npm run build` (client/) | N/A | KAN-48: pass; KAN-50: pass |
+| `npm run test` (client/) | N/A | KAN-50: 6 passed |
 | Playwright | N/A | N/A (W7) |
 
 ## Merge order (into `feature/voiceray-mvp`)
@@ -116,6 +115,18 @@ Standard pedagogical set (varied places/manners):
 | ID | Blocker | Owner | Next action |
 | -- | ------- | ----- | ----------- |
 | — | None | — | — |
+
+## KAN-50 commit gate (feature/w3-vocal-tract-svg)
+
+| Item | Status |
+| ---- | ------ |
+| Branch | `feature/w3-vocal-tract-svg` (from `feature/voiceray-mvp`) |
+| Commit | `4189f06` |
+| Pre-work `npm run test` | Skipped — coordinator test-slot; frontend-only leaf |
+| Post-work `npm run build` / `npm run test` | Pass (6 tests, 0 failures) |
+| UI/API validation | N/A — SVG rig + player unit tests; no API shape change |
+| PR | None (per epic policy) |
+| Deliverables | `client/public/vocal-tract.svg`, `client/src/animation/SagittalPlayer.js`, `client/tests/sagittal-player.test.js` |
 
 ## KAN-48 commit gate (feature/w1-scaffold)
 
