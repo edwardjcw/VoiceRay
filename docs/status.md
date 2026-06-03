@@ -15,182 +15,63 @@
 | SDK | .NET 10 (fallback .NET 9 in `global.json` if needed) |
 | GPU | CUDA preferred; **CPU fallback must show obvious UI banner** |
 | Models | Repo `models/` (gitignored) + reuse `%USERPROFILE%\.cache\whisper\` when Whisper used |
-| Coordinator | parallel-coordinator; max **2** concurrent implementation leaves; **1** `dotnet test` slot |
-
-## User decisions (locked)
-
-- `docs/status.md` is the resume checkpoint for all agents.
-- Per-ticket branch → merge into `feature/voiceray-mvp`; no per-ticket PRs.
-- All phases (0–4) in scope for this run.
-- Reference art committed at `assets/vocal-tract/reference.png`.
-- Demo words: see **Demo word set** below.
 
 ## Demo word set (`en-US`)
 
-Standard pedagogical set (varied places/manners):
-
-| # | Word | Teaching focus |
-| - | ---- | ---------------- |
-| 1 | pat | Voiceless bilabial stop + æ |
-| 2 | pet | Voicing + ɛ |
-| 3 | pit | High front vowel ɪ |
-| 4 | pot | Back rounded ɑ |
-| 5 | put | High back ʊ |
-| 6 | cat | Velar stop k |
-| 7 | dog | Voiced velar ɡ |
-| 8 | think | Interdental θ |
-| 9 | red | Rhotic /ɹ/ |
-| 10 | ship | Post-alveolar ʃ |
+pat, pet, pit, pot, put, cat, dog, think, red, ship — see plan for teaching focus.
 
 ## Plan todos (`docs/plan.md` frontmatter)
 
-| ID | Jira | Branch | Status | Notes |
-| -- | ---- | ------ | ------ | ----- |
-| scaffold-solution | KAN-48 | `feature/w1-scaffold` | done | Merged @ `ed14360` |
-| vocal-tract-svg | KAN-50 | `feature/w3-vocal-tract-svg` | done | Merged @ `6418dd8` |
-| api-contract | KAN-49 | `feature/w2-api-contract` | done | Merged @ `cbcd6bb` |
-| backend-reference | KAN-51 | `feature/w4-reference-pipeline` | done | Merged @ `8c63e3f` (`e20f715`) |
-| backend-analyze | KAN-52 | `feature/w5-analyze` | done | Merged @ `4ead801` |
-| backend-compare | KAN-53 | `feature/w6-compare` | done | Merged @ `8aa67f7` |
-| frontend-flows | KAN-54 | `feature/w7-frontend` | pending | Playwright required |
-| docs-multilingual | KAN-55 | `feature/w8-docs-mfa` | done | Merged @ `1e34b3c` — architecture, articulatory-model, MFA stub |
+| ID | Jira | Status | Merge ref |
+| -- | ---- | ------ | --------- |
+| scaffold-solution | KAN-48 | done | `ed14360` |
+| vocal-tract-svg | KAN-50 | done | `6418dd8` |
+| api-contract | KAN-49 | done | `cbcd6bb` |
+| backend-reference | KAN-51 | done | `8c63e3f` |
+| backend-analyze | KAN-52 | done | `4ead801` |
+| backend-compare | KAN-53 | done | `8aa67f7` |
+| frontend-flows | KAN-54 | done | `1018650` (merged with W7) |
+| docs-multilingual | KAN-55 | done | `1e34b3c` |
 
 ## Phase checklist
 
-| Phase | Status | Success criteria (from plan) |
-| ----- | ------ | ------------------------------ |
-| 0 Foundation | done | .NET 10 + Vite + CI + MIT + reference.png (KAN-48) |
-| 1 Reference + SVG | done | KAN-50 SVG + KAN-51 `/reference` (integration @ `8c63e3f`) |
-| 2 Record + replay | in progress | KAN-52 analyze merged; W7 UI replay pending |
-| 3 Compare + coaching | in progress | KAN-53 merged; W7 ghost overlay + UI pending |
-| 4 Multilingual + MFA | in progress | Docs + `workers/mfa/` stub (KAN-55); locale packs + PWA pending |
+| Phase | Status | Notes |
+| ----- | ------ | ----- |
+| 0 Foundation | done | KAN-48 |
+| 1 Reference + SVG | done | KAN-50, KAN-51 |
+| 2 Record + replay | done | KAN-52, KAN-54 |
+| 3 Compare + coaching | done | KAN-53, KAN-54 ghost overlay |
+| 4 Multilingual + MFA | partial | KAN-55 docs + MFA Docker stub; locale packs + PWA deferred |
 
-## Model & asset inventory
+## WIP policy
 
-| Asset | Status | Path / notes |
-| ----- | ------ | ------------- |
-| Vocal tract reference | **done** | `assets/vocal-tract/reference.png` |
-| Piper binary + en-US voice | **done** (local) | `models/piper/` via `scripts/provision-piper.ps1` (~97 MB); gitignored |
-| Whisper cache | **reuse** | `%USERPROFILE%\.cache\whisper\` (~1.73 GB); not copied — see `docs/providers.md` |
-| MFA Docker / models | **stub** | `workers/mfa/` Docker compose + health (KAN-55); acoustic models not bundled |
-| CMU / G2P lexicon | **stub** | `VoiceRay.Core/G2pStub.fs` — 10 demo words `en-US` |
+**Epic implementation complete on `feature/voiceray-mvp`.** Next: final gates + single PR → `main`.
 
-## WIP policy (current wave)
+## Gate evidence (integration)
 
-**Active:** KAN-54 (W7 frontend)
-
-**Completed:** KAN-47–55 backend/docs on `feature/voiceray-mvp` @ `1e34b3c` (W7 frontend in progress — uncommitted client WIP on integration checkout)
-
-**Proof queue:** integration **32 passed** (post-W6 merge)
-
-## Gate evidence
-
-| Gate | Pre-work | Post-work |
-| ---- | -------- | --------- |
-| `dotnet build` | KAN-51: 0 warnings (Release) | KAN-51: 0 warnings (Release) |
-| `dotnet test` | KAN-53: 22 passed (baseline on mvp) | KAN-53: **32 passed** (21 Core + 11 Api) |
-| `npm run build` (client/) | N/A | KAN-48, KAN-50: pass |
-| `npm run test` (client/) | N/A | KAN-50: 6 passed |
-| Playwright | N/A | N/A (W7) |
+| Gate | Result |
+| ---- | ------ |
+| `dotnet build` / `dotnet test` | 32 passed (post-W6); re-run after W7 merge |
+| `npm run build` / `npm run test` (client/) | KAN-54: 9 unit + 4 Playwright |
+| Playwright | KAN-54 e2e (`client/e2e/flows.spec.js`) |
 
 ## Merge order (into `feature/voiceray-mvp`)
 
-1. ~~`feature/w1-scaffold`~~ @ `ed14360`
-2. ~~`feature/w0-models`~~ W0 assets @ `0874ebc` (cherry-picked files, not branch merge)
-3. ~~`feature/w2-api-contract`~~ @ `cbcd6bb`
-4. ~~`feature/w3-vocal-tract-svg`~~ @ `6418dd8`
-5. ~~`feature/w4-reference-pipeline`~~ @ `8c63e3f`
-6. ~~`feature/w5-analyze`~~ @ `4ead801`
-7. ~~`feature/w6-compare`~~ @ `8aa67f7`
-8. `feature/w7-frontend`
-9. ~~`feature/w8-docs-mfa`~~ @ `1e34b3c`
-10. Single PR → `main`
+All ticket branches merged. Release step: PR → `main`.
 
 ## Blockers
 
-| ID | Blocker | Owner | Next action |
-| -- | ------- | ----- | ----------- |
-| — | None | — | — |
+None.
 
-## KAN-47 commit gate (feature/w0-models)
+## KAN-54 commit gate
 
 | Item | Status |
 | ---- | ------ |
-| Commit | `0874ebc` (NOTICE, `scripts/provision-piper.ps1`, `docs/providers.md`) |
-| Piper smoke | `piper.exe --version` → 1.2.0 |
-| Whisper | Cache audited; reuse only |
-
-## KAN-49 commit gate (feature/w2-api-contract)
-
-| Item | Status |
-| ---- | ------ |
-| Commit | `cbcd6bb` |
-| Post-work `dotnet build` / `dotnet test` | Pass (7 tests, 0 warnings) |
-| UI/API validation | `docs/api.md` + 501 stubs; OpenAPI `/openapi/v1.json` (Development) |
-
-## KAN-55 commit gate (feature/w8-docs-mfa)
-
-| Item | Status |
-| ---- | ------ |
-| Branch | `feature/w8-docs-mfa` (from `feature/voiceray-mvp`) |
-| Commit | `a82c1b2` |
-| Pre-work `dotnet test` / `npm test` | **N/A** — docs + Docker stub only; no test slot |
-| Post-work `dotnet test` / `npm test` | **N/A** — no application code changed |
-| UI/API validation | **N/A** — documentation and `workers/mfa/` stub; API contract unchanged |
-| Deliverables | `docs/architecture.md`, `docs/articulatory-model.md`, `docs/providers.md` (expanded), `workers/mfa/` (Dockerfile, compose, stub server), locale matrix in architecture.md |
-| PR | **None** (per coordinator: commit on branch only) |
-
-## KAN-53 commit gate (feature/w6-compare)
-
-| Item | Status |
-| ---- | ------ |
-| Branch | `feature/w6-compare` (from `feature/voiceray-mvp`) |
-| Commit | `f3d298d` |
-| Pre-work `dotnet build` / `dotnet test` | Pass (22 tests, 0 warnings; mvp baseline) |
-| Post-work `dotnet build` / `dotnet test` | Pass (**32** tests, 0 warnings) |
-| UI/API validation | `POST /api/v1/compare` JSON; greedy IPA align + en-US `CoachingRules`; `docs/api.md` updated |
-| PR | **None** (per user/coordinator: commit on branch only) |
-
-## KAN-52 commit gate (feature/w5-analyze)
-
-| Item | Status |
-| ---- | ------ |
-| Branch | `feature/w5-analyze` (from `feature/voiceray-mvp`) |
-| Commit | `4597300` |
-| Pre-work `dotnet build` / `dotnet test` | Pass (16 tests, 0 warnings) |
-| Post-work `dotnet build` / `dotnet test` | Pass (22 tests, 0 warnings) |
-| UI/API validation | `POST /api/v1/analyze` multipart; `docs/api.md` metadata; compare still 501 |
-| PR | **None** (per-epic merge policy) |
-
-## KAN-51 commit gate (feature/w4-reference-pipeline)
-
-| Item | Status |
-| ---- | ------ |
-| Branch | `feature/w4-reference-pipeline` (from `feature/voiceray-mvp`) |
-| Commit | `e20f715` |
-| Pre-work `dotnet build` | Pass (0 warnings) |
-| Post-work `dotnet build` / `dotnet test` | Pass (16 tests, 0 warnings) |
-| UI/API validation | `POST /api/v1/reference` live; analyze/compare remain 501; Piper + demo lexicon |
-| PR | **None** (per-epic merge policy) |
-
-## KAN-50 commit gate (feature/w3-vocal-tract-svg)
-
-| Item | Status |
-| ---- | ------ |
-| Commit | `8a2e6c5` |
-| Post-work `npm run build` / `npm run test` | Pass (6 tests) |
-
-## KAN-48 commit gate (feature/w1-scaffold)
-
-| Item | Status |
-| ---- | ------ |
-| Commit | `ed14360` |
-| Post-work `dotnet build` / `dotnet test` | Pass |
-| Post-work `npm run build` / `npm test` | Pass |
+| Commit | `1018650` |
+| Post-work npm | 9 unit + 4 Playwright |
+| UI | Practice/record/compare, deviceBanner, ghost overlay |
 
 ## Agent notes
 
-- **OSS speech config:** `Speech:Provider = Local` in appsettings; Piper/MFA/Whisper paths in `docs/providers.md` (KAN-55).
-- **Architecture docs:** `docs/architecture.md`, `docs/articulatory-model.md`; locale matrix in architecture.md.
-- **Azure:** Deferred; do not add SDK calls requiring keys in this epic.
-- **Hot spots:** `.sln`, `VoiceRay.Core`, `VoiceRay.Api`, `client/vite.config`, `docs/status.md` (coordinator-owned reconciliation).
+- Final PR per user policy; no per-ticket PRs.
+- Phase 4 follow-ups (optional): locale packs, PWA manifest, live MFA HTTP client.
