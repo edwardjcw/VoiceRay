@@ -1,0 +1,21 @@
+# Build
+bin/
+obj/
+dist/
+node_modules/
+
+# Models & large artifacts (see docs/status.md)
+models/
+*.onnx
+
+# Secrets
+appsettings.*.local.json
+**/secrets.json
+
+# IDE
+.vs/
+.idea/
+
+# OS
+Thumbs.db
+.DS_Store
