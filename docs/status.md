@@ -52,7 +52,7 @@ Standard pedagogical set (varied places/manners):
 | backend-reference | KAN-51 | `feature/w4-reference-pipeline` | done | Merged @ `8c63e3f` (`e20f715`) |
 | backend-analyze | KAN-52 | `feature/w5-analyze` | done | Merged @ `4ead801` |
 | backend-compare | KAN-53 | `feature/w6-compare` | done | Merged @ `8aa67f7` |
-| frontend-flows | KAN-54 | `feature/w7-frontend` | pending | Playwright required |
+| frontend-flows | KAN-54 | `feature/w7-frontend` | done | Playwright e2e in `client/e2e` |
 | docs-multilingual | KAN-55 | `feature/w8-docs-mfa` | pending | Phase 4 |
 
 ## Phase checklist
@@ -61,8 +61,8 @@ Standard pedagogical set (varied places/manners):
 | ----- | ------ | ------------------------------ |
 | 0 Foundation | done | .NET 10 + Vite + CI + MIT + reference.png (KAN-48) |
 | 1 Reference + SVG | done | KAN-50 SVG + KAN-51 `/reference` (integration @ `8c63e3f`) |
-| 2 Record + replay | in progress | KAN-52 analyze merged; W7 UI replay pending |
-| 3 Compare + coaching | in progress | KAN-53 `/compare` on branch; W7 ghost overlay + UI pending |
+| 2 Record + replay | done | KAN-54 practice/record UI + MediaRecorder + sync |
+| 3 Compare + coaching | done | KAN-54 ghost overlay + coaching + `/compare` UI |
 | 4 Multilingual + MFA | pending | Locale packs + MFA Docker + PWA |
 
 ## Model & asset inventory
@@ -77,9 +77,9 @@ Standard pedagogical set (varied places/manners):
 
 ## WIP policy (current wave)
 
-**Active:** KAN-54 (W7 frontend), KAN-55 (W8 docs/MFA)
+**Active:** KAN-55 (W8 docs/MFA)
 
-**Completed:** KAN-47–53 on `feature/voiceray-mvp` @ `8aa67f7`
+**Completed:** KAN-47–54 on `feature/w7-frontend` (commit pending; merge into `feature/voiceray-mvp` next)
 
 **Proof queue:** integration **32 passed** (post-W6 merge)
 
@@ -90,8 +90,8 @@ Standard pedagogical set (varied places/manners):
 | `dotnet build` | KAN-51: 0 warnings (Release) | KAN-51: 0 warnings (Release) |
 | `dotnet test` | KAN-53: 22 passed (baseline on mvp) | KAN-53: **32 passed** (21 Core + 11 Api) |
 | `npm run build` (client/) | N/A | KAN-48, KAN-50: pass |
-| `npm run test` (client/) | N/A | KAN-50: 6 passed |
-| Playwright | N/A | N/A (W7) |
+| `npm run test` (client/) | KAN-54: 9 unit passed | KAN-54: 9 unit + 4 Playwright passed |
+| Playwright | N/A | KAN-54: 4 e2e (`client/e2e/flows.spec.js`) |
 
 ## Merge order (into `feature/voiceray-mvp`)
 
@@ -127,6 +127,16 @@ Standard pedagogical set (varied places/manners):
 | Commit | `cbcd6bb` |
 | Post-work `dotnet build` / `dotnet test` | Pass (7 tests, 0 warnings) |
 | UI/API validation | `docs/api.md` + 501 stubs; OpenAPI `/openapi/v1.json` (Development) |
+
+## KAN-54 commit gate (feature/w7-frontend)
+
+| Item | Status |
+| ---- | ------ |
+| Branch | `feature/w7-frontend` (from `feature/voiceray-mvp`) |
+| Pre-work `npm run build` / `npm run test` | Pass (6 unit, 0 warnings) |
+| Post-work `npm run build` / `npm run test` | Pass (9 unit + 4 Playwright, 0 warnings) |
+| UI/API validation | Practice/record/compare call `/reference`, `/analyze`, `/compare`; `deviceBanner` visible after analyze; ghost compare overlay; SagittalPlayer audio sync |
+| PR | **None** (per coordinator: commit on branch only) |
 
 ## KAN-53 commit gate (feature/w6-compare)
 

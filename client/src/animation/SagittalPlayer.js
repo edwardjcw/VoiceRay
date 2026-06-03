@@ -189,6 +189,22 @@ export class SagittalPlayer {
       this.applyPose(active.layers)
     }
   }
+
+  /**
+   * Mark layers as ghost reference overlay (styling via CSS).
+   * @param {ArticulatoryPose | null | undefined} pose
+   */
+  applyGhostPose(pose) {
+    if (!this.root) return
+    const ghostClass = 'voiceray-ghost-layer'
+    for (const id of LAYER_IDS) {
+      const layer = this.getLayer(id)
+      if (!layer) continue
+      layer.classList.remove(ghostClass)
+      if (pose?.[id]) layer.classList.add(ghostClass)
+    }
+    if (pose) this.applyPose(pose)
+  }
 }
 
 /**
@@ -203,4 +219,32 @@ export async function mountSagittalPlayer(container) {
   container.innerHTML = text
   const svg = container.querySelector('svg')
   return new SagittalPlayer(svg instanceof SVGElement ? svg : null)
+}
+
+/**
+ * Mount reference (ghost) and user sagittal players for compare overlay.
+ * @param {HTMLElement} container
+ * @returns {Promise<{ ghost: SagittalPlayer; user: SagittalPlayer }>}
+ */
+export async function mountComparePlayers(container) {
+  const res = await fetch('/vocal-tract.svg')
+  if (!res.ok) throw new Error(`Failed to load vocal-tract.svg (${res.status})`)
+  const text = await res.text()
+  container.innerHTML = `
+    <div class="sagittal-stack" data-testid="ghost-overlay">
+      <div class="sagittal-ghost" aria-hidden="true"></div>
+      <div class="sagittal-user"></div>
+    </div>
+  `
+  const ghostHost = container.querySelector('.sagittal-ghost')
+  const userHost = container.querySelector('.sagittal-user')
+  if (!ghostHost || !userHost) throw new Error('Compare mount failed')
+  ghostHost.innerHTML = text
+  userHost.innerHTML = text
+  const ghostSvg = ghostHost.querySelector('svg')
+  const userSvg = userHost.querySelector('svg')
+  return {
+    ghost: new SagittalPlayer(ghostSvg instanceof SVGElement ? ghostSvg : null),
+    user: new SagittalPlayer(userSvg instanceof SVGElement ? userSvg : null),
+  }
 }
