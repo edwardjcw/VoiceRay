@@ -133,7 +133,7 @@ Standard pedagogical set (varied places/manners):
 | Item | Status |
 | ---- | ------ |
 | Branch | `feature/w6-compare` (from `feature/voiceray-mvp`) |
-| Commit | `530fad7` |
+| Commit | `f3d298d` |
 | Pre-work `dotnet build` / `dotnet test` | Pass (22 tests, 0 warnings; mvp baseline) |
 | Post-work `dotnet build` / `dotnet test` | Pass (**32** tests, 0 warnings) |
 | UI/API validation | `POST /api/v1/compare` JSON; greedy IPA align + en-US `CoachingRules`; `docs/api.md` updated |
