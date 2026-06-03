@@ -47,7 +47,7 @@ Standard pedagogical set (varied places/manners):
 | ID | Jira | Branch | Status | Notes |
 | -- | ---- | ------ | ------ | ----- |
 | scaffold-solution | KAN-48 | `feature/w1-scaffold` | done | Merged to `feature/voiceray-mvp` @ `ed14360` |
-| vocal-tract-svg | KAN-50 | `feature/w3-vocal-tract-svg` | done | Layered SVG + SagittalPlayer + tests |
+| vocal-tract-svg | KAN-50 | `feature/w3-vocal-tract-svg` | done | Merged @ `6418dd8` (`8a2e6c5`) |
 | api-contract | KAN-49 | `feature/w2-api-contract` | pending | After W1 |
 | backend-reference | KAN-51 | `feature/w4-reference-pipeline` | pending | Piper from W0 |
 | backend-analyze | KAN-52 | `feature/w5-analyze` | pending | MFA/Whisper OSS |
@@ -77,11 +77,9 @@ Standard pedagogical set (varied places/manners):
 
 ## WIP policy (current wave)
 
-**Active (max 2):**
+**Active (max 2):** KAN-47 (W0 models), KAN-49 (W2 API contract)
 
-1. KAN-47 (W0 models) — `feature/w0-models` (resume; no commits yet)
-2. KAN-49 (W2 API contract) — `feature/w2-api-contract`
-**Completed this wave:** KAN-48 merged → `feature/voiceray-mvp` @ `ed14360`; KAN-50 committed on `feature/w3-vocal-tract-svg`
+**Completed this wave:** KAN-48 @ `ed14360`; KAN-50 merged @ `6418dd8`
 
 **Proof queue:** re-run `dotnet test` on integration branch after next merge batch
 
@@ -102,7 +100,7 @@ Standard pedagogical set (varied places/manners):
 1. ~~`feature/w1-scaffold`~~ **merged** @ `ed14360`
 2. `feature/w0-models` (in progress)
 3. `feature/w2-api-contract`
-4. `feature/w3-vocal-tract-svg` (parallel with W2 if hot-spots OK)
+4. ~~`feature/w3-vocal-tract-svg`~~ **merged** @ `6418dd8`
 5. `feature/w4-reference-pipeline`
 6. `feature/w5-analyze`
 7. `feature/w6-compare`

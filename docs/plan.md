@@ -7,7 +7,7 @@ todos:
     status: completed
   - id: vocal-tract-svg
     content: Trace reference cutout into layered SVG (lips, jaw, tongue, velum, static anatomy); JS ArticulatoryPlayer with morph/tween
-    status: pending
+    status: completed
   - id: api-contract
     content: Define OpenAPI/JSON contract — reference session, analyze recording, animation keyframes, pronunciation report
     status: pending
