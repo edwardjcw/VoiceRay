@@ -16,7 +16,7 @@ todos:
     status: completed
   - id: backend-analyze
     content: F# user pipeline — WAV ingest, Azure pronunciation assessment + MFA fallback, user timeline
-    status: pending
+    status: completed
   - id: backend-compare
     content: F# phoneme diff + rule-based coaching; expose compare endpoint
     status: pending

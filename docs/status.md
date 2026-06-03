@@ -50,7 +50,7 @@ Standard pedagogical set (varied places/manners):
 | vocal-tract-svg | KAN-50 | `feature/w3-vocal-tract-svg` | done | Merged @ `6418dd8` |
 | api-contract | KAN-49 | `feature/w2-api-contract` | done | Merged @ `cbcd6bb` |
 | backend-reference | KAN-51 | `feature/w4-reference-pipeline` | done | Merged @ `8c63e3f` (`e20f715`) |
-| backend-analyze | KAN-52 | `feature/w5-analyze` | done | `POST /analyze` WAV + OSS stubs |
+| backend-analyze | KAN-52 | `feature/w5-analyze` | done | Merged @ `4ead801` |
 | backend-compare | KAN-53 | `feature/w6-compare` | pending | Phase 3 |
 | frontend-flows | KAN-54 | `feature/w7-frontend` | pending | Playwright required |
 | docs-multilingual | KAN-55 | `feature/w8-docs-mfa` | pending | Phase 4 |
@@ -61,7 +61,7 @@ Standard pedagogical set (varied places/manners):
 | ----- | ------ | ------------------------------ |
 | 0 Foundation | done | .NET 10 + Vite + CI + MIT + reference.png (KAN-48) |
 | 1 Reference + SVG | done | KAN-50 SVG + KAN-51 `/reference` (integration @ `8c63e3f`) |
-| 2 Record + replay | in progress | Analyze WAV live (KAN-52); compare + UI replay (W7) pending |
+| 2 Record + replay | in progress | KAN-52 analyze merged; W7 UI replay pending |
 | 3 Compare + coaching | pending | Ghost overlay + coaching text |
 | 4 Multilingual + MFA | pending | Locale packs + MFA Docker + PWA |
 
@@ -79,9 +79,9 @@ Standard pedagogical set (varied places/manners):
 
 **Active:** KAN-53 (W6 compare) — next
 
-**Completed:** KAN-47–52 (`feature/w5-analyze` commit pending merge into `feature/voiceray-mvp`)
+**Completed:** KAN-47–52 on `feature/voiceray-mvp` @ `4ead801`
 
-**Proof queue:** `feature/w5-analyze` `dotnet test` — **22 passed** (14 Core + 8 Api)
+**Proof queue:** integration **22 passed** (post-W5 merge)
 
 ## Gate evidence
 
@@ -100,7 +100,7 @@ Standard pedagogical set (varied places/manners):
 3. ~~`feature/w2-api-contract`~~ @ `cbcd6bb`
 4. ~~`feature/w3-vocal-tract-svg`~~ @ `6418dd8`
 5. ~~`feature/w4-reference-pipeline`~~ @ `8c63e3f`
-6. `feature/w5-analyze`
+6. ~~`feature/w5-analyze`~~ @ `4ead801`
 7. `feature/w6-compare`
 8. `feature/w7-frontend`
 9. `feature/w8-docs-mfa`
