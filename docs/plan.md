@@ -4,28 +4,28 @@ overview: Open-source hybrid app with an F# .NET 10 backend (phonetics, TTS, ali
 todos:
   - id: scaffold-solution
     content: Scaffold .NET 10 solution (VoiceRay.Api, VoiceRay.Core, VoiceRay.Infrastructure) + Vite JS client, MIT license, CI
-    status: pending
+    status: completed
   - id: vocal-tract-svg
     content: Trace reference cutout into layered SVG (lips, jaw, tongue, velum, static anatomy); JS ArticulatoryPlayer with morph/tween
-    status: pending
+    status: completed
   - id: api-contract
     content: Define OpenAPI/JSON contract — reference session, analyze recording, animation keyframes, pronunciation report
-    status: pending
+    status: completed
   - id: backend-reference
     content: F# reference pipeline — G2P, TTS (Piper local + Azure optional), PhonemeTimeline + ArticulatoryKeyframe generation
-    status: pending
+    status: completed
   - id: backend-analyze
     content: F# user pipeline — WAV ingest, Azure pronunciation assessment + MFA fallback, user timeline
-    status: pending
+    status: completed
   - id: backend-compare
     content: F# phoneme diff + rule-based coaching; expose compare endpoint
-    status: pending
+    status: completed
   - id: frontend-flows
     content: JS practice/record/compare screens, MediaRecorder, audio playback synced to backend keyframes
-    status: pending
+    status: completed
   - id: docs-multilingual
     content: docs/architecture.md, providers.md, articulatory-model.md; locale matrix; optional MFA Docker (Phase 4)
-    status: pending
+    status: completed
 ---
 
 # VoiceRay — F# backend + JS frontend plan

@@ -1,0 +1,31 @@
+VoiceRay
+Copyright (c) 2026 Edward Conrad
+
+This project is licensed under the MIT License. See LICENSE for the full text.
+
+This product bundles or invokes the following third-party software:
+
+---
+
+## Piper (rhasspy/piper)
+
+- Source: https://github.com/rhasspy/piper
+- Release used: 2023.11.14-2 (piper_windows_amd64.zip)
+- License: MIT License
+- Copyright (c) Rhasspy contributors
+- Voice models: https://huggingface.co/rhasspy/piper-voices (en_US-lessac-medium)
+- Installed locally under `models/piper/` (gitignored); provision via `scripts/provision-piper.ps1`
+
+---
+
+## OpenAI Whisper (alignment cache, optional reuse)
+
+- Source: https://github.com/openai/whisper
+- License: MIT License
+- VoiceRay does not vendor Whisper weights in-repo; reuse `%USERPROFILE%\.cache\whisper\` when present (see `docs/status.md`).
+
+---
+
+## Montreal Forced Aligner (Phase 4, optional)
+
+- Documented in `workers/mfa/` when provisioned (KAN-55). License per MFA distribution.

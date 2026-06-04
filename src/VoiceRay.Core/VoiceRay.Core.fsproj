@@ -1,0 +1,23 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="ApplicationInfo.fs" />
+    <Compile Include="Contract.fs" />
+    <Compile Include="CompareSegmentJsonConverter.fs" />
+    <Compile Include="ContractJson.fs" />
+    <Compile Include="G2pStub.fs" />
+    <Compile Include="PoseMap.fs" />
+    <Compile Include="ComputeDevice.fs" />
+    <Compile Include="AnalyzeScoring.fs" />
+    <Compile Include="PhonemeDiff.fs" />
+    <Compile Include="CoachingRules.fs" />
+    <Compile Include="ComparePipeline.fs" />
+    <Compile Include="ReferencePipeline.fs" />
+    <Compile Include="AnalyzePipeline.fs" />
+  </ItemGroup>
+
+</Project>
