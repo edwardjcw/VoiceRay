@@ -8,7 +8,7 @@ import {
   speechFromHealth,
   waitForSetupReady,
 } from '../api/client.js'
-import { mountSagittalPlayer, mountComparePlayers } from '../animation/SagittalPlayer.js'
+import { mountSagittalPlayer, mountComparePlayers, poseAtTime } from '../animation/SagittalPlayer.js'
 import { KeyframeSync } from '../audio/syncPlayback.js'
 import { startRecording } from '../audio/recorder.js'
 import { session, updateSession, clearAnalyzeAndCompare } from '../state/session.js'
@@ -475,11 +475,9 @@ async function initComparePanel(mount) {
     const tick = () => {
       if (!audio.paused) {
         const ms = audio.currentTime * 1000
-        comparePlayers?.ghost.playKeyframes(reference.keyframes, ms)
-        const ghostLayers = reference.keyframes.find(
-          (f) => ms >= (f.startMs ?? 0) && ms < (f.endMs ?? Number.POSITIVE_INFINITY),
-        )?.layers
-        if (ghostLayers) comparePlayers?.ghost.applyGhostPose(ghostLayers)
+        if (comparePlayers?.ghost) {
+          comparePlayers.ghost.applyGhostPose(poseAtTime(reference.keyframes, ms))
+        }
         renderPhonemeStrip(
           mount.querySelector('#compare-phonemes'),
           analyze.phonemes,

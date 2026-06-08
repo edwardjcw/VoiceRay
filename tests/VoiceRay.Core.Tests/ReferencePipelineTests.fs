@@ -26,7 +26,7 @@ let ``Reference pipeline builds keyframes for pat`` () =
 
         let first = session.Keyframes.[0]
         Assert.Equal("p", first.Ipa)
-        Assert.True(first.Layers.ContainsKey "lips_upper")
+        Assert.True(first.Pose.LipClosure > 0.5, "bilabial /p/ should close the lips")
         Assert.Contains("bilabial", first.Highlight)
 
 [<Fact>]

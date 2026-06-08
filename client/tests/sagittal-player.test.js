@@ -8,6 +8,9 @@ import {
   NEUTRAL_POSE,
   TEST_POSES,
   LAYER_IDS,
+  poseAtTime,
+  lerpPose,
+  tongueTransform,
 } from '../src/animation/SagittalPlayer.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
@@ -15,23 +18,24 @@ const svgPath = join(__dirname, '..', 'public', 'vocal-tract.svg')
 
 const REQUIRED_LAYER_IDS = [
   'outline',
-  'teeth_upper',
-  'teeth_lower',
+  'palate',
+  'pharynx',
+  'velum',
+  'tongue',
+  'tongue_tip',
   'lips_upper',
   'lips_lower',
   'jaw',
-  'tongue',
-  'velum',
-  'palate',
+  'teeth_upper',
+  'teeth_lower',
 ]
 
-/** @param {Record<string, { transform?: string; d?: string }>} shapes */
-function makeMockSvgRoot(shapes) {
+/** Minimal SVG-group mock with a single <path> child per group. */
+function makeMockSvgRoot() {
   const layers = new Map()
   for (const id of LAYER_IDS) {
-    const spec = shapes[id] ?? { d: 'M 0 0' }
     const pathEl = {
-      attrs: { d: spec.d ?? 'M 0 0' },
+      attrs: { d: 'M 0 0' },
       getAttribute(name) {
         return this.attrs[name] ?? null
       },
@@ -41,6 +45,7 @@ function makeMockSvgRoot(shapes) {
     }
     const group = {
       attrs: {},
+      classList: { _s: new Set(), add(c) { this._s.add(c) }, remove(c) { this._s.delete(c) }, contains(c) { return this._s.has(c) } },
       getAttribute(name) {
         return this.attrs[name] ?? null
       },
@@ -65,62 +70,85 @@ function makeMockSvgRoot(shapes) {
 }
 
 describe('vocal-tract.svg', () => {
-  it('defines required animate layers per plan', () => {
+  it('defines the required animated + landmark layers', () => {
     const markup = readFileSync(svgPath, 'utf8')
     for (const id of REQUIRED_LAYER_IDS) {
       assert.match(markup, new RegExp(`id="${id}"`), `missing #${id}`)
     }
-    assert.match(markup, /viewBox="0 0 217 232"/)
-    assert.match(markup, /vocal-tract-reference\.png/)
+    assert.match(markup, /viewBox="-12 64 372 452"/)
+    // Rig is real geometry now — no static reference raster.
+    assert.doesNotMatch(markup, /<image/)
   })
 })
 
-describe('SagittalPlayer', () => {
-  it('exposes neutral pose and five test poses', () => {
-    assert.deepEqual(NEUTRAL_POSE, {})
+describe('SagittalPlayer pose model', () => {
+  it('neutral pose exposes the full articulatory parameter set', () => {
+    const keys = Object.keys(NEUTRAL_POSE).sort()
+    assert.deepEqual(keys, [
+      'interdental',
+      'jawOpen',
+      'lipClosure',
+      'lipRounding',
+      'tongueBackness',
+      'tongueHeight',
+      'tongueTip',
+      'velum',
+    ])
     assert.equal(Object.keys(TEST_POSES).length, 5)
   })
 
-  it('applies and restores test poses', () => {
-    const root = makeMockSvgRoot({
-      tongue: { d: 'M 1 1' },
-    })
-    const player = new SagittalPlayer(root)
-    const tongue = player.getLayer('tongue')
-    const path = tongue?.querySelector('path')
-    const defaultD = path?.getAttribute('d')
-
-    assert.ok(player.applyTestPose('open-vowel'))
-    assert.notEqual(path?.getAttribute('d'), defaultD)
-
-    player.resetToNeutral()
-    assert.equal(path?.getAttribute('d'), defaultD)
+  it('tongueTransform moves up+front for high-front and down+back for low-back', () => {
+    const front = tongueTransform({ ...NEUTRAL_POSE, tongueHeight: 0.95, tongueBackness: 0.15, jawOpen: 0.2 })
+    const back = tongueTransform({ ...NEUTRAL_POSE, tongueHeight: 0.1, tongueBackness: 0.9, jawOpen: 0.9 })
+    const [fx, fy] = front.match(/-?\d+\.?\d*/g).map(Number)
+    const [bx, by] = back.match(/-?\d+\.?\d*/g).map(Number)
+    assert.ok(fx < 0, 'high-front tongue shifts toward the front (−x)')
+    assert.ok(fy < 0, 'high tongue shifts up (−y)')
+    assert.ok(bx > 0, 'back tongue shifts toward the pharynx (+x)')
+    assert.ok(by > 0, 'low + open jaw shifts the tongue down (+y)')
   })
 
-  it('playKeyframes selects segment by timeMs', () => {
-    const root = makeMockSvgRoot({
-      tongue: { d: 'M 0 0' },
-    })
+  it('applyPose updates tongue transform and renders lip closure geometry', () => {
+    const root = makeMockSvgRoot()
     const player = new SagittalPlayer(root)
-    const keyframes = [
-      {
-        startMs: 0,
-        endMs: 100,
-        layers: TEST_POSES['high-front-vowel'],
-      },
-      {
-        startMs: 100,
-        endMs: 200,
-        layers: TEST_POSES['open-vowel'],
-      },
-    ]
-    player.playKeyframes(keyframes, 150)
-    const path = player.getLayer('tongue')?.querySelector('path')
-    assert.equal(path?.getAttribute('d'), TEST_POSES['open-vowel'].tongue.d)
+    const neutralTransform = player.getLayer('tongue').getAttribute('transform')
+
+    player.applyPose(TEST_POSES['high-front-vowel'])
+    assert.notEqual(player.getLayer('tongue').getAttribute('transform'), neutralTransform)
+
+    player.applyPose(TEST_POSES['bilabial-closure'])
+    const upper = player.getLayer('lips_upper').querySelector('path').getAttribute('d')
+    const lower = player.getLayer('lips_lower').querySelector('path').getAttribute('d')
+    assert.ok(upper.length > 0 && lower.length > 0, 'lips render closure geometry')
   })
 
-  it('lists animation layer ids used by the player', () => {
-    assert.ok(LAYER_IDS.includes('tongue'))
-    assert.ok(LAYER_IDS.includes('velum'))
+  it('applyTestPose returns false for unknown poses', () => {
+    const player = new SagittalPlayer(makeMockSvgRoot())
+    assert.equal(player.applyTestPose('does-not-exist'), false)
+    assert.equal(player.applyTestPose('open-vowel'), true)
+  })
+})
+
+describe('pose interpolation', () => {
+  const keyframes = [
+    { ipa: 'p', startMs: 0, endMs: 100, pose: TEST_POSES['bilabial-closure'] },
+    { ipa: 'a', startMs: 100, endMs: 250, pose: TEST_POSES['open-vowel'] },
+  ]
+
+  it('poseAtTime selects the active segment', () => {
+    const p = poseAtTime(keyframes, 200)
+    // Well past the ramp → fully the open vowel.
+    assert.equal(p.jawOpen, TEST_POSES['open-vowel'].jawOpen)
+  })
+
+  it('poseAtTime eases in from the previous phoneme at a boundary', () => {
+    const atStart = poseAtTime(keyframes, 100)
+    // At the boundary the pose still reflects the previous (closed) phoneme.
+    assert.ok(atStart.jawOpen < TEST_POSES['open-vowel'].jawOpen)
+  })
+
+  it('lerpPose blends every parameter', () => {
+    const mid = lerpPose(NEUTRAL_POSE, TEST_POSES['open-vowel'], 0.5)
+    assert.equal(mid.jawOpen, (NEUTRAL_POSE.jawOpen + TEST_POSES['open-vowel'].jawOpen) / 2)
   })
 })

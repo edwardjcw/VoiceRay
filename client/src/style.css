@@ -269,14 +269,12 @@ h1 {
   width: 100%;
   height: auto;
   display: block;
-  background: #0a0a0a;
+  background: #f4f7fb;
+  border-radius: 8px;
 }
 
-.sagittal-view svg image {
-  display: block;
-}
-
-/* Pose layers are structural only — anatomy comes from reference.png */
+/* Legacy empty-layer rule retained for any external references (no-op for the
+   parametric rig, whose anatomy is real SVG geometry). */
 .voiceray-anim-layer {
   opacity: 0;
   pointer-events: none;

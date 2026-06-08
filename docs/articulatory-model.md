@@ -1,71 +1,74 @@
 # Articulatory model (sagittal vocal tract)
 
-> Pedagogical pose library for the layered SVG rig. Source art: [`assets/vocal-tract/reference.png`](../assets/vocal-tract/reference.png). Runtime SVG: [`client/public/vocal-tract.svg`](../client/public/vocal-tract.svg). Backend map: `src/VoiceRay.Core/PoseMap.fs`.
+> Pedagogical pose library for the layered SVG rig. Source art: [`assets/vocal-tract/reference.svg`](../assets/vocal-tract/reference.svg) (vector trace; replaces the old raster). Runtime SVG: [`client/public/vocal-tract.svg`](../client/public/vocal-tract.svg). Backend map: `src/VoiceRay.Core/PoseMap.fs`. Frontend rig: `client/src/animation/SagittalPlayer.js`.
 
-VoiceRay does **not** simulate biomechanics. Each IPA segment maps to a **discrete target pose** (transform + optional tongue path `d`) so learners see where articulators move for common American English phones.
+VoiceRay does **not** simulate biomechanics. Each IPA segment maps to a **normalized articulatory pose** — a small set of `0..1` parameters (jaw, tongue height/backness, tip, lip rounding/closure, velum) grounded in the IPA vowel chart and consonant place/manner. The **backend emits phonetics** (the pose parameters); the **frontend renders geometry** (`SagittalPlayer` converts parameters into tongue/lip/velum SVG paths and tweens between phonemes). This decoupling keeps the phonetics testable and lets the rig art evolve independently.
+
+The static anatomy (head outline, hard palate, pharyngeal wall) is traced from `reference.svg`. The **tongue** is the real traced tongue path animated by a transform; the **tongue tip**, **velum**, and **lips** are generated procedurally from the pose.
 
 ## SVG layer legend
 
-Layers are top-level `<g id="...">` groups in `vocal-tract.svg`. Paint order (back → front): cavity → palate → outline → jaw → teeth → lips → tongue → velum → glottis hint.
+Layers are top-level `<g id="...">` groups in `vocal-tract.svg`. Paint order (back → front): outline → palate → pharynx → velum → jaw → teeth → tongue → tongue_tip → lips → glottis hint.
 
-| Layer ID | Animates | Role |
-| -------- | -------- | ---- |
-| `cavity` | No | Oral/nasal/pharyngeal airspace (black fill) |
-| `palate` | No | Hard palate landmark |
-| `outline` | No | Skull, nose profile, neck frame |
-| `jaw` | Yes | Mandible open/close; moves lower teeth group |
-| `teeth_upper` | With jaw | Upper dental row (landmark) |
-| `teeth_lower` | With jaw | Lower dental row |
-| `lips_upper` | Yes | Lip spreading, rounding, closure |
-| `lips_lower` | Yes | Lower lip + jaw coupling |
-| `tongue` | Yes | Tip/blade/root via path `d` morph |
-| `velum` | Yes | Nasal vs oral (translate down ≈ nasal coupling) |
-| `glottis_hint` | Optional | Simple voiced/voiceless hint (low MVP usage) |
+| Layer ID | Animates | Driven by | Role |
+| -------- | -------- | --------- | ---- |
+| `outline` | No | — | Skull, nose profile, neck frame (traced) |
+| `palate` | No | — | Hard palate landmark (traced) |
+| `pharynx` | No | — | Pharyngeal wall (traced) |
+| `tongue` | Yes | `jawOpen`, `tongueHeight`, `tongueBackness` | Tongue body via `transform` on the traced tongue path |
+| `tongue_tip` | Yes | `tongueTip`, `interdental` | Procedural tip raise / interdental protrusion |
+| `lips_upper` | Yes | `lipRounding`, `lipClosure` | Upper lip rounding / closure (procedural) |
+| `lips_lower` | Yes | `lipRounding`, `lipClosure`, `jawOpen` | Lower lip + jaw coupling (procedural) |
+| `velum` | Yes | `velum` | Soft palate raised (oral) vs lowered (nasal) (procedural) |
+| `jaw` / `teeth_upper` / `teeth_lower` / `glottis_hint` | Highlight only | `highlight` | Landmark groups for UI emphasis |
 
-**Neutral pose:** empty layer overrides — traced reference resting articulation (`SagittalPlayer.NEUTRAL_POSE`).
+**Neutral pose:** `SagittalPlayer.NEUTRAL_POSE` (and backend `PoseMap.neutral`) — resting articulation rendered when no segment is active.
 
-**Highlights:** backend `highlight` string array (e.g. `tongue_tip`, `alveolar`) drives UI emphasis; not separate SVG layers.
+**Highlights:** backend `highlight` string array (e.g. `tongue_tip`, `alveolar`) drives UI emphasis; not separate animated paths.
 
 ## JSON pose shape
 
-Matches `VoiceRay.Core.LayerPose` / API keyframes:
+Each keyframe carries an `ArticulatoryPose` (normalized `0..1` parameters) — see [`api.md`](api.md#articulatorypose) for the full field reference:
 
 ```json
 {
   "ipa": "t",
   "startMs": 120,
   "endMs": 180,
-  "layers": {
-    "lips_upper": { "transform": "translate(0,0)" },
-    "tongue": { "d": "M 46 96 Q ... Z" }
+  "pose": {
+    "jawOpen": 0.25,
+    "tongueHeight": 0.55,
+    "tongueBackness": 0.35,
+    "tongueTip": 1.0,
+    "interdental": 0.0,
+    "lipRounding": 0.0,
+    "lipClosure": 0.0,
+    "velum": 0.0
   },
   "highlight": ["tongue_tip", "alveolar"]
 }
 ```
 
-- `transform` — SVG/CSS transform on the layer group.
-- `d` — replacement path data for `tongue` (primary morph target).
-
-Frontend test poses in `client/src/animation/SagittalPlayer.js` (`TEST_POSES`) mirror backend presets for local verification.
+The frontend `SagittalPlayer` interpolates poses across time (`poseAtTime` / `lerpPose`) so articulators tween smoothly between phonemes (a simple coarticulation model). `NEUTRAL_POSE` and `TEST_POSES` in `SagittalPlayer.js` mirror backend presets for local verification.
 
 ## IPA pose families (`en-US`)
 
-`PoseMap.fs` groups phones into shared templates:
+`PoseMap.fs` maps phones to poses using these key parameters:
 
-| Template | IPA symbols | Articulatory focus | Highlight tags |
-| -------- | ----------- | ------------------ | -------------- |
-| Bilabial stop | `p`, `b` | Lip compression | `bilabial` |
-| Alveolar stop | `t`, `d` | Tongue tip at alveolar ridge | `tongue_tip`, `alveolar` |
-| Velar stop | `k`, `ɡ`, `g` | Tongue body at velum | `velar` |
-| Open vowel | `æ`, `ɑ` | Jaw open, tongue low | (vowel) |
-| High front vowel | `ɛ`, `ɪ` | Spread lips, front tongue | (vowel) |
-| Rounded back vowel | `ʊ`, `ɔ` | Lip rounding, back tongue | (vowel) |
-| Interdental | `θ` | Tongue between teeth | `interdental` |
-| Post-alveolar | `ʃ` | Tongue blade retracted | `post_alveolar` |
-| Rhotic | `ɹ` | Bunched/retroflex approximant | `rhotic` |
-| Nasal velar | `ŋ` | Velum lowered, back tongue | `velar`, `nasal` |
+| Template | IPA symbols | Key parameters | Highlight tags |
+| -------- | ----------- | -------------- | -------------- |
+| Bilabial stop | `p`, `b` | `lipClosure≈1` | `bilabial` |
+| Alveolar stop | `t`, `d` | `tongueTip≈1` | `tongue_tip`, `alveolar` |
+| Velar stop | `k`, `ɡ`, `g` | high `tongueHeight` + `tongueBackness` | `velar` |
+| Open vowel | `æ`, `ɑ` | high `jawOpen`, low `tongueHeight` | (vowel) |
+| High front vowel | `ɛ`, `ɪ` | high `tongueHeight`, low `tongueBackness` | (vowel) |
+| Rounded back vowel | `ʊ`, `ɔ` | `lipRounding>0`, high `tongueBackness` | (vowel) |
+| Interdental | `θ` | `interdental≈1` | `interdental` |
+| Post-alveolar | `ʃ` | mid `tongueTip`, blade retracted | `post_alveolar` |
+| Rhotic | `ɹ` | bunched mid tongue, slight `lipRounding` | `rhotic` |
+| Nasal velar | `ŋ` | `velum≈1`, high `tongueBackness` | `velar`, `nasal` |
 
-Unknown IPA for a segment still emits a keyframe with **empty** `layers` (no morph) — timeline remains visible.
+Unknown IPA for a segment still emits a keyframe whose `pose` is `neutral` (no movement) — the timeline stays visible.
 
 ## Demo word set (`en-US`)
 
