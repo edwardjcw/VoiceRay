@@ -82,7 +82,16 @@ let ``AnalyzeService returns phonemes keyframes scores and metadata`` () =
         Assert.True(response.Keyframes.Length >= 2)
         Assert.Equal(3, response.Scores.Length)
         Assert.True(response.AudioEcho.IsSome)
-        Assert.Equal("whisper-stub", response.Metadata.AlignmentEngine)
+
+        let opts = alignmentOptions ()
+
+        let expectedEngine =
+            if AlignmentOptions.whisperCacheAvailable opts then
+                "whisper-stub"
+            else
+                "mfa-stub"
+
+        Assert.Equal(expectedEngine, response.Metadata.AlignmentEngine)
         Assert.True(
             response.Metadata.DeviceBanner.Contains("CPU")
             || response.Metadata.DeviceBanner.Contains("CUDA"))
@@ -102,23 +111,29 @@ let ``AnalyzeService uses MFA stub when Whisper cache unavailable and provider W
 
 [<Fact>]
 let ``AnalyzeService detects pat practiced with pit-like vowel`` () =
-    let service = AnalyzeService(acousticOnlyAlignmentOptions (), piperOptions (), contentRoot ())
-    let wav = pVtWav 2400.0
+    if not (piperConfigured ()) then
+        () // Acoustic vowel probe requires Piper synthesis on the host
+    else
+        let service = AnalyzeService(acousticOnlyAlignmentOptions (), piperOptions (), contentRoot ())
+        let wav = pVtWav 2400.0
 
-    match service.Analyze(wav, "pat", "en-US") with
-    | Error err -> Assert.Fail($"Expected OK, got {err}")
-    | Ok response ->
-        Assert.Equal(3, response.Phonemes.Length)
-        Assert.NotEqual<string>("æ", response.Phonemes.[1].Ipa)
+        match service.Analyze(wav, "pat", "en-US") with
+        | Error err -> Assert.Fail($"Expected OK, got {err}")
+        | Ok response ->
+            Assert.Equal(3, response.Phonemes.Length)
+            Assert.NotEqual<string>("æ", response.Phonemes.[1].Ipa)
 
 [<Fact>]
 let ``AnalyzeService keeps expected vowel for pat-like production`` () =
-    let service = AnalyzeService(acousticOnlyAlignmentOptions (), piperOptions (), contentRoot ())
-    let wav = pVtWav 900.0
+    if not (piperConfigured ()) then
+        ()
+    else
+        let service = AnalyzeService(acousticOnlyAlignmentOptions (), piperOptions (), contentRoot ())
+        let wav = pVtWav 900.0
 
-    match service.Analyze(wav, "pat", "en-US") with
-    | Error err -> Assert.Fail($"Expected OK, got {err}")
-    | Ok response -> Assert.Equal("æ", response.Phonemes.[1].Ipa)
+        match service.Analyze(wav, "pat", "en-US") with
+        | Error err -> Assert.Fail($"Expected OK, got {err}")
+        | Ok response -> Assert.Equal("æ", response.Phonemes.[1].Ipa)
 
 [<Fact>]
 let ``AnalyzeService infers pit from user pit wav fixture when practicing pat`` () =
