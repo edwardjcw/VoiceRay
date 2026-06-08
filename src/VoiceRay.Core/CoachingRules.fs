@@ -58,8 +58,14 @@ module CoachingRules =
               ("æ", "ɛ"),
               { Message = "Open the mouth wider for /æ/ (as in pat), not the closer /ɛ/ vowel."
                 HighlightLayers = [ "jaw"; "tongue" ] }
+              ("æ", "ɪ"),
+              { Message = "Open the mouth wider and lower the tongue for /æ/ (as in pat), not the closer /ɪ/ vowel in pit."
+                HighlightLayers = [ "jaw"; "tongue" ] }
               ("ɛ", "æ"),
               { Message = "Use the closer /ɛ/ vowel, not the more open /æ/."
+                HighlightLayers = [ "jaw"; "tongue" ] }
+              ("ɪ", "æ"),
+              { Message = "Use the closer lax /ɪ/ vowel (as in pit), not the more open /æ/ in pat."
                 HighlightLayers = [ "jaw"; "tongue" ] }
               ("ɪ", "i"),
               { Message = "Use lax /ɪ/ (as in pit), not a tense high vowel."

@@ -9,7 +9,7 @@ type AnalyzeServiceError =
     | InvalidAudio of message: string
     | G2pUnavailable
 
-type AnalyzeService(alignmentOptions: AlignmentOptions) =
+type AnalyzeService(alignmentOptions: AlignmentOptions, piperOptions: PiperOptions, contentRoot: string) =
     member _.AlignmentOptions = alignmentOptions
 
     member _.Analyze(audioBytes: byte[], text: string, locale: string) =
@@ -33,12 +33,32 @@ type AnalyzeService(alignmentOptions: AlignmentOptions) =
                         |> Option.defaultValue 320
 
                     let alignment = OssAlignment.align alignmentOptions locale g2p durationMs
-                    let keyframes = PoseMap.keyframesForTimeline locale alignment.Phonemes
-                    let scores = AnalyzeScoring.scorePhonemes alignment.Phonemes
+
+                    let inference =
+                        UserPhonemeInference.infer
+                            contentRoot
+                            alignmentOptions
+                            piperOptions
+                            normalized
+                            locale
+                            text
+                            alignment.Phonemes
+                            durationMs
+
+                    let phonemes = inference.Phonemes
+                    let keyframes = PoseMap.keyframesForTimeline locale phonemes
+                    let scores = AnalyzeScoring.scorePhonemes phonemes
+
+                    let metadata =
+                        OssAlignment.withInference
+                            (OssAlignment.toMetadata alignment)
+                            (Some(UserPhonemeInference.sourceLabel inference.Source))
+                            (UserPhonemeInference.inferredWord inference.Source)
+                            inference.Note
 
                     Ok
-                        { Phonemes = alignment.Phonemes
+                        { Phonemes = phonemes
                           Keyframes = keyframes
                           Scores = scores
                           AudioEcho = Some(Convert.ToBase64String normalized)
-                          Metadata = OssAlignment.toMetadata alignment }
+                          Metadata = metadata }

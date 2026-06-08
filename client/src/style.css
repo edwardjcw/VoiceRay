@@ -39,6 +39,99 @@ h1 {
   color: var(--accent);
 }
 
+.speech-setup {
+  font-size: 0.9rem;
+  color: #c9a227;
+  margin: 0.25rem 0;
+}
+
+.setup-panel {
+  margin: 1rem 0;
+  padding: 0.75rem 1rem;
+  border: 1px solid #444;
+  border-radius: 8px;
+  background: #141414;
+}
+
+.setup-panel[hidden] {
+  display: none !important;
+}
+
+.setup-title {
+  margin: 0 0 0.5rem;
+  font-size: 1rem;
+}
+
+.setup-resources {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 0.75rem;
+  display: grid;
+  gap: 0.35rem;
+}
+
+.setup-resource {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.15rem 0.75rem;
+  font-size: 0.85rem;
+}
+
+.setup-resource-label {
+  font-weight: 600;
+}
+
+.setup-resource-status {
+  text-transform: capitalize;
+  color: #aaa;
+}
+
+.setup-resource-detail {
+  grid-column: 1 / -1;
+  color: #777;
+  font-size: 0.8rem;
+}
+
+.setup-resource--ready .setup-resource-status {
+  color: #6bcf7f;
+}
+
+.setup-resource--missing .setup-resource-status {
+  color: #e8b84a;
+}
+
+.setup-log {
+  margin: 0;
+  padding: 0.5rem 0 0 1.25rem;
+  max-height: 10rem;
+  overflow-y: auto;
+  font-family: ui-monospace, Consolas, monospace;
+  font-size: 0.78rem;
+  color: #bbb;
+}
+
+.setup-log-line--error {
+  color: #f08080;
+}
+
+.setup-log-line--warn {
+  color: #e8c468;
+}
+
+.btn-secondary {
+  margin-top: 0.35rem;
+  padding: 0.35rem 0.75rem;
+  border-radius: 6px;
+  border: 1px solid #555;
+  background: #2a2a2a;
+  color: #eee;
+  cursor: pointer;
+}
+
+.btn-secondary:hover {
+  border-color: #888;
+}
+
 .health-warn {
   color: var(--warn);
 }
@@ -158,6 +251,11 @@ h1 {
   outline: 1px solid var(--accent);
 }
 
+.ipa-seg.ipa-substitution {
+  color: #ffb347;
+  text-decoration: underline wavy #e07a2f;
+}
+
 .ipa-muted {
   color: #777;
 }
@@ -171,6 +269,17 @@ h1 {
   width: 100%;
   height: auto;
   display: block;
+  background: #0a0a0a;
+}
+
+.sagittal-view svg image {
+  display: block;
+}
+
+/* Pose layers are structural only — anatomy comes from reference.png */
+.voiceray-anim-layer {
+  opacity: 0;
+  pointer-events: none;
 }
 
 .sagittal-stack {

@@ -5,13 +5,15 @@ import {
   postAnalyze,
   postCompare,
   audioSrcFromPayload,
+  speechFromHealth,
+  waitForSetupReady,
 } from '../api/client.js'
 import { mountSagittalPlayer, mountComparePlayers } from '../animation/SagittalPlayer.js'
 import { KeyframeSync } from '../audio/syncPlayback.js'
 import { startRecording } from '../audio/recorder.js'
 import { session, updateSession, clearAnalyzeAndCompare } from '../state/session.js'
 import { DEMO_WORDS } from '../constants/demoWords.js'
-import { renderPhonemeStrip } from '../ui/phonemeStrip.js'
+import { renderPhonemeStrip, renderComparePhonemeStrip } from '../ui/phonemeStrip.js'
 
 /** @type {'practice' | 'record' | 'compare'} */
 let activeStep = 'practice'
@@ -53,7 +55,17 @@ function buildShell() {
         <p class="tagline">Sagittal vocal-tract pronunciation coach</p>
         <p class="api-base">API: <code>${getApiBaseUrl() || '(same-origin / dev proxy)'}</code></p>
         <p id="health-status" class="health" data-testid="health-status">Checking API…</p>
+        <p id="speech-setup" class="speech-setup" data-testid="speech-setup" hidden></p>
+        <button type="button" id="btn-fix-speech" class="btn-secondary" data-testid="btn-fix-speech" hidden>
+          Set up missing resources
+        </button>
       </header>
+
+      <section id="setup-panel" class="setup-panel" data-testid="setup-panel" hidden>
+        <h2 class="setup-title">Resource setup</h2>
+        <ul id="setup-resources" class="setup-resources" data-testid="setup-resources"></ul>
+        <ol id="setup-log" class="setup-log" data-testid="setup-log" reversed></ol>
+      </section>
 
       <section class="word-bar">
         <label for="word-select">Word</label>
@@ -77,6 +89,10 @@ function buildShell() {
  * @param {HTMLElement} mount
  */
 function wireShell(mount) {
+  mount.querySelector('#btn-fix-speech')?.addEventListener('click', async () => {
+    await runResourceSetup(mount, { userInitiated: true })
+  })
+
   const wordSelect = mount.querySelector('#word-select')
   wordSelect?.addEventListener('change', async () => {
     updateSession({ text: wordSelect.value, reference: null })
@@ -158,22 +174,37 @@ function recordPanelHtml() {
   `
 }
 
-function comparePanelHtml() {
+function buildCoachingHtml() {
   const coaching = session.compare?.coaching ?? []
-  const coachingHtml = coaching.length
-    ? coaching
+  if (coaching.length) {
+    return coaching
+      .map((c) => `<li data-testid="coaching-item">${escapeHtml(c.message)}</li>`)
+      .join('')
+  }
+  if (session.compare) {
+    const subs = (session.compare.segments ?? []).filter((s) => s.kind === 'substitution')
+    if (subs.length) {
+      return subs
         .map(
-          (c) =>
-            `<li data-testid="coaching-item">${escapeHtml(c.message)}</li>`,
+          (s) =>
+            `<li data-testid="coaching-fallback">You produced /${escapeHtml(s.userIpa ?? '?')}/ instead of /${escapeHtml(s.referenceIpa ?? '?')}/.</li>`,
         )
         .join('')
-    : '<li class="ipa-muted">Run analyze, then open Compare.</li>'
+    }
+    return '<li class="ipa-muted" data-testid="coaching-empty">No coaching tips — pronunciation matches the reference.</li>'
+  }
+  return '<li class="ipa-muted">Load reference, record, analyze, then click Run compare.</li>'
+}
+
+function comparePanelHtml() {
+  const coachingHtml = buildCoachingHtml()
+  const canScrub = session.reference && session.analyze
 
   return `
     <section class="panel" data-testid="compare-panel">
       <div class="panel-actions">
         <button type="button" id="btn-run-compare" data-testid="run-compare">Run compare</button>
-        <button type="button" id="btn-play-compare" data-testid="play-compare" disabled>Scrub compare</button>
+        <button type="button" id="btn-play-compare" data-testid="play-compare" ${canScrub ? '' : 'disabled'}>Scrub compare</button>
       </div>
       <div class="compare-legend">
         <span class="legend-ghost">Ghost = reference</span>
@@ -194,42 +225,56 @@ async function initPracticePanel(mount) {
   const container = mount.querySelector('#practice-sagittal')
   if (container) {
     practicePlayer = await mountSagittalPlayer(container)
+    practicePlayer.resetToNeutral()
   }
 
   const ref = session.reference
   const strip = mount.querySelector('#practice-phonemes')
   if (strip && ref) renderPhonemeStrip(strip, ref.phonemes)
 
-  mount.querySelector('#btn-load-reference')?.addEventListener('click', async () => {
+  const loadBtn = mount.querySelector('#btn-load-reference')
+  if (loadBtn?.dataset.wired === 'true') return
+  if (loadBtn) loadBtn.dataset.wired = 'true'
+
+  loadBtn?.addEventListener('click', async () => {
     try {
-      setStatus(mount, 'Loading reference…')
-      const reference = await postReference({ text: session.text, locale: session.locale })
-      updateSession({ reference })
+      loadBtn?.setAttribute('disabled', 'true')
+      await loadReferenceWithSpeechSetup(mount)
       clearAnalyzeAndCompare()
       setStatus(mount, `Reference loaded for "${session.text}".`)
       await showStep(mount, 'practice')
     } catch (err) {
       setStatus(mount, err instanceof Error ? err.message : 'Reference failed')
+    } finally {
+      loadBtn?.removeAttribute('disabled')
     }
   })
 
-  mount.querySelector('#btn-play-reference')?.addEventListener('click', async () => {
-    const reference = session.reference
-    if (!reference || !practicePlayer) return
-    const src = audioSrcFromPayload(reference)
-    if (!src) {
-      setStatus(mount, 'No reference audio in response.')
-      return
-    }
-    await playWithSync(
-      mount.querySelector('#practice-audio'),
-      src,
-      reference.keyframes,
-      practicePlayer,
-      mount.querySelector('#practice-phonemes'),
-      reference.phonemes,
-    )
-  })
+  const playBtn = mount.querySelector('#btn-play-reference')
+  if (playBtn?.dataset.wired !== 'true') {
+    if (playBtn) playBtn.dataset.wired = 'true'
+    playBtn?.addEventListener('click', async () => {
+      const reference = session.reference
+      if (!reference || !practicePlayer) return
+      const src = audioSrcFromPayload(reference)
+      if (!src) {
+        setStatus(mount, 'No reference audio in response.')
+        return
+      }
+      try {
+        await playWithSync(
+          mount.querySelector('#practice-audio'),
+          src,
+          reference.keyframes,
+          practicePlayer,
+          mount.querySelector('#practice-phonemes'),
+          reference.phonemes,
+        )
+      } catch (err) {
+        setStatus(mount, err instanceof Error ? err.message : 'Playback failed')
+      }
+    })
+  }
 }
 
 /**
@@ -239,6 +284,7 @@ async function initRecordPanel(mount) {
   const container = mount.querySelector('#record-sagittal')
   if (container) {
     recordPlayer = await mountSagittalPlayer(container)
+    recordPlayer.resetToNeutral()
   }
 
   /** @type {Blob | null} */
@@ -301,7 +347,21 @@ async function initRecordPanel(mount) {
       const strip = mount.querySelector('#record-phonemes')
       if (strip) renderPhonemeStrip(strip, result.phonemes)
       mount.querySelector('#btn-play-user')?.removeAttribute('disabled')
-      setStatus(mount, 'Analyze complete.')
+      const inferred = result.metadata?.inferredWord
+      const inference = result.metadata?.phonemeInference
+      const refIpa = session.reference?.phonemes?.[1]?.ipa
+      const userIpa = result.phonemes?.[1]?.ipa
+      let status = 'Analyze complete.'
+      if (inferred && inferred !== session.text) {
+        status = `Analyze heard “${inferred}” (not “${session.text}”). Compare will show differences.`
+      } else if (refIpa && userIpa && refIpa !== userIpa) {
+        status = `Analyze detected /${userIpa}/ instead of reference /${refIpa}/. Run compare for coaching.`
+      } else if (inference && inference !== 'text-g2p') {
+        status = `Analyze used ${inference}.`
+      } else if (result.metadata?.inferenceNote) {
+        status = result.metadata.inferenceNote
+      }
+      setStatus(mount, status)
     } catch (err) {
       setStatus(mount, err instanceof Error ? err.message : 'Analyze failed')
     }
@@ -329,50 +389,73 @@ async function initRecordPanel(mount) {
 /**
  * @param {HTMLElement} mount
  */
+/**
+ * @param {HTMLElement} mount
+ */
+function refreshComparePanel(mount) {
+  const coachingList = mount.querySelector('#coaching-list')
+  if (coachingList) coachingList.innerHTML = buildCoachingHtml()
+
+  const strip = mount.querySelector('#compare-phonemes')
+  if (strip) renderComparePhonemeStrip(strip, session)
+
+  if (session.reference && session.analyze) {
+    mount.querySelector('#btn-play-compare')?.removeAttribute('disabled')
+  }
+}
+
 async function initComparePanel(mount) {
   const container = mount.querySelector('#compare-sagittal')
   if (container) {
     comparePlayers = await mountComparePlayers(container)
+    comparePlayers.ghost.resetToNeutral()
+    comparePlayers.user.resetToNeutral()
   }
 
-  const ref = session.reference
-  const user = session.analyze
-  if (ref && comparePlayers) {
-    comparePlayers.ghost.playKeyframes(ref.keyframes, 0)
-    comparePlayers.ghost.applyGhostPose(ref.keyframes[0]?.layers ?? null)
-  }
-  if (user && comparePlayers) {
-    comparePlayers.user.playKeyframes(user.keyframes, 0)
+  refreshComparePanel(mount)
+
+  const runBtn = mount.querySelector('#btn-run-compare')
+  if (runBtn?.dataset.wired !== 'true') {
+    if (runBtn) runBtn.dataset.wired = 'true'
+    runBtn?.addEventListener('click', async () => {
+      const reference = session.reference
+      const analyze = session.analyze
+      if (!reference || !analyze) {
+        setStatus(mount, 'Load reference on Practice, then record and analyze on Record first.')
+        return
+      }
+      try {
+        runBtn.setAttribute('disabled', 'true')
+        setStatus(mount, 'Comparing…')
+        const compare = await postCompare({
+          referencePhonemes: reference.phonemes,
+          userPhonemes: analyze.phonemes,
+          locale: session.locale,
+        })
+        updateSession({ compare })
+        refreshComparePanel(mount)
+        const tips = compare.coaching?.length ?? 0
+        const subs = (compare.segments ?? []).filter((s) => s.kind === 'substitution').length
+        setStatus(
+          mount,
+          tips > 0
+            ? `Compare ready — ${tips} coaching tip${tips === 1 ? '' : 's'}.`
+            : subs > 0
+              ? `Compare ready — ${subs} sound substitution${subs === 1 ? '' : 's'} detected.`
+              : 'Compare ready — no differences from reference.',
+        )
+      } catch (err) {
+        setStatus(mount, err instanceof Error ? err.message : 'Compare failed')
+      } finally {
+        runBtn.removeAttribute('disabled')
+      }
+    })
   }
 
-  const strip = mount.querySelector('#compare-phonemes')
-  if (strip && ref && user) {
-    renderPhonemeStrip(strip, user.phonemes)
-  }
-
-  mount.querySelector('#btn-run-compare')?.addEventListener('click', async () => {
-    const reference = session.reference
-    const analyze = session.analyze
-    if (!reference || !analyze) {
-      setStatus(mount, 'Need reference + analyze first.')
-      return
-    }
-    try {
-      setStatus(mount, 'Comparing…')
-      const compare = await postCompare({
-        referencePhonemes: reference.phonemes,
-        userPhonemes: analyze.phonemes,
-        locale: session.locale,
-      })
-      updateSession({ compare })
-      await showStep(mount, 'compare')
-      setStatus(mount, `Compare: ${compare.segments?.length ?? 0} segments.`)
-    } catch (err) {
-      setStatus(mount, err instanceof Error ? err.message : 'Compare failed')
-    }
-  })
-
-  mount.querySelector('#btn-play-compare')?.addEventListener('click', async () => {
+  const playBtn = mount.querySelector('#btn-play-compare')
+  if (playBtn?.dataset.wired !== 'true') {
+    if (playBtn) playBtn.dataset.wired = 'true'
+    playBtn?.addEventListener('click', async () => {
     const reference = session.reference
     const analyze = session.analyze
     if (!reference || !analyze || !comparePlayers) return
@@ -407,10 +490,7 @@ async function initComparePanel(mount) {
     }
     requestAnimationFrame(tick)
     audio.onended = () => stopPlayback()
-  })
-
-  if (session.reference && session.analyze) {
-    mount.querySelector('#btn-play-compare')?.removeAttribute('disabled')
+    })
   }
 }
 
@@ -427,6 +507,23 @@ async function playWithSync(audioEl, src, keyframes, player, stripEl, phonemes) 
   stopPlayback()
   audioEl.src = src
   activeAudio = audioEl
+  await new Promise((resolve, reject) => {
+    const onError = () => {
+      cleanup()
+      reject(new Error(`Could not load audio (${src}). Is the API running and media reachable?`))
+    }
+    const onReady = () => {
+      cleanup()
+      resolve()
+    }
+    const cleanup = () => {
+      audioEl.removeEventListener('error', onError)
+      audioEl.removeEventListener('canplaythrough', onReady)
+    }
+    audioEl.addEventListener('error', onError, { once: true })
+    audioEl.addEventListener('canplaythrough', onReady, { once: true })
+    audioEl.load()
+  })
   await audioEl.play()
   activeSync = new KeyframeSync(player, audioEl, keyframes)
   activeSync.start()
@@ -466,18 +563,171 @@ function updateDeviceBanner(mount, banner) {
 /**
  * @param {HTMLElement} mount
  */
+/** @type {import('../api/speechSetup.js').SpeechCapabilities | null} */
+let lastSpeechCapabilities = null
+
+/**
+ * @param {HTMLElement} mount
+ */
 async function refreshHealth(mount) {
   const healthEl = mount.querySelector('#health-status')
   if (!healthEl) return
   try {
     const health = await fetchHealth()
-    healthEl.textContent = `API ${health.status} (${health.speechProvider ?? 'unknown'} speech)`
+    lastSpeechCapabilities = speechFromHealth(health)
+    const speechLabel =
+      lastSpeechCapabilities?.allRequiredReady === true
+        ? 'resources ready'
+        : lastSpeechCapabilities?.setupState === 'running'
+          ? 'setup running'
+          : 'setup needed'
+    healthEl.textContent = `API ${health.status} (${health.speechProvider ?? 'local'}, ${speechLabel})`
     healthEl.classList.add('health-ok')
+    updateSpeechSetupUi(mount, lastSpeechCapabilities)
+
   } catch {
     healthEl.textContent =
       'API unreachable — start VoiceRay.Api (dotnet run) for local dev.'
     healthEl.classList.add('health-warn')
+    updateSpeechSetupUi(mount, null)
   }
+}
+
+/**
+ * @param {HTMLElement} mount
+ * @param {import('../api/speechSetup.js').SpeechCapabilities | null} speech
+ */
+function updateSpeechSetupUi(mount, speech) {
+  const setupEl = mount.querySelector('#speech-setup')
+  const fixBtn = mount.querySelector('#btn-fix-speech')
+  if (!setupEl || !fixBtn) return
+
+  if (!speech) {
+    setupEl.hidden = true
+    fixBtn.hidden = true
+    return
+  }
+
+  if (speech.allRequiredReady) {
+    setupEl.hidden = true
+    fixBtn.hidden = true
+    hideSetupPanel(mount)
+    return
+  }
+
+  setupEl.hidden = false
+  fixBtn.hidden = false
+  setupEl.textContent =
+    'Some resources are missing. They will install automatically when you load a reference, or click Set up missing resources.'
+}
+
+/**
+ * @param {HTMLElement} mount
+ * @param {import('../api/setup.js').SetupStatus} status
+ */
+function renderSetupPanel(mount, status, options = {}) {
+  const panel = mount.querySelector('#setup-panel')
+  const resourceList = mount.querySelector('#setup-resources')
+  const logList = mount.querySelector('#setup-log')
+  if (!panel || !resourceList || !logList) return
+
+  const forceVisible = options.forceVisible === true
+  const active = forceVisible || status.state === 'running' || !status.ready || (status.logs?.length ?? 0) > 0
+  panel.hidden = !active
+
+  resourceList.innerHTML = (status.resources ?? [])
+    .map(
+      (r) =>
+        `<li class="setup-resource setup-resource--${escapeHtml(r.status)}" data-resource="${escapeHtml(r.id)}">
+          <span class="setup-resource-label">${escapeHtml(r.label)}</span>
+          <span class="setup-resource-status">${escapeHtml(r.status)}</span>
+          <span class="setup-resource-detail">${escapeHtml(r.detail ?? '')}</span>
+        </li>`,
+    )
+    .join('')
+
+  logList.innerHTML = (status.logs ?? [])
+    .slice(-40)
+    .map(
+      (entry) =>
+        `<li class="setup-log-line setup-log-line--${escapeHtml(entry.level ?? 'info')}">${escapeHtml(entry.message)}</li>`,
+    )
+    .join('')
+}
+
+/**
+ * @param {HTMLElement} mount
+ */
+function hideSetupPanel(mount) {
+  const panel = mount.querySelector('#setup-panel')
+  if (panel) panel.hidden = true
+}
+
+/**
+ * @param {HTMLElement} mount
+ * @param {{ userInitiated?: boolean }} [options]
+ */
+async function runResourceSetup(mount, options = {}) {
+  try {
+    setStatus(mount, 'Setting up missing resources…')
+    await waitForSetupReady({
+      onUpdate: (status) => {
+        renderSetupPanel(mount, status)
+        const running = status.logs?.[status.logs.length - 1]
+        if (running?.message) {
+          setStatus(mount, running.message)
+        }
+      },
+    })
+    const health = await fetchHealth()
+    lastSpeechCapabilities = speechFromHealth(health)
+    updateSpeechSetupUi(mount, lastSpeechCapabilities)
+    hideSetupPanel(mount)
+    setStatus(mount, 'All required resources are ready.')
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : 'Resource setup failed'
+    setStatus(mount, msg)
+    if (options.userInitiated) {
+      const setupEl = mount.querySelector('#speech-setup')
+      if (setupEl) {
+        setupEl.hidden = false
+        setupEl.textContent = `${msg} Try again with Set up missing resources.`
+      }
+    }
+    throw err
+  }
+}
+
+/**
+ * @param {HTMLElement} mount
+ */
+/**
+ * @param {HTMLElement} mount
+ * @param {import('../api/setup.js').SetupStatus} status
+ */
+function applyActivityStatus(mount, status) {
+  renderSetupPanel(mount, status, { forceVisible: true })
+  const last = status.logs?.[status.logs.length - 1]
+  if (last?.message) {
+    setStatus(mount, last.message)
+  }
+}
+
+async function loadReferenceWithSpeechSetup(mount) {
+  setStatus(mount, 'Checking required resources…')
+  await waitForSetupReady({
+    onUpdate: (status) => applyActivityStatus(mount, status),
+  })
+
+  setStatus(mount, 'Loading reference…')
+  const reference = await postReference(
+    { text: session.text, locale: session.locale },
+    {
+      onActivity: (status) => applyActivityStatus(mount, status),
+    },
+  )
+  updateSession({ reference })
+  hideSetupPanel(mount)
 }
 
 /**

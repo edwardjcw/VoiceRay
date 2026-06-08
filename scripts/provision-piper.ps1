@@ -37,5 +37,9 @@ foreach ($pair in @(
 
 $Exe = Join-Path $BinDir "piper\piper.exe"
 & $Exe --version
+"pat" | & $Exe -m $Onnx -f (Join-Path $env:TEMP "voiceray-piper-smoke.wav") -q
+if (-not (Test-Path (Join-Path $env:TEMP "voiceray-piper-smoke.wav"))) {
+    throw "Piper smoke synthesis failed (stdin text required)."
+}
 Write-Host "Piper ready: $Exe"
 Write-Host "Voice: $Onnx"

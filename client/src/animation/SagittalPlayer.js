@@ -104,6 +104,7 @@ export class SagittalPlayer {
       this._defaults.set(id, {
         transform: layer.getAttribute('transform'),
         d: path?.getAttribute('d') ?? null,
+        opacity: layer.getAttribute('opacity'),
       })
     }
   }
@@ -149,14 +150,23 @@ export class SagittalPlayer {
         if (defaults.transform) layer.setAttribute('transform', defaults.transform)
         else layer.removeAttribute('transform')
         if (path && defaults.d) path.setAttribute('d', defaults.d)
+        if (defaults.opacity) layer.setAttribute('opacity', defaults.opacity)
+        else layer.removeAttribute('opacity')
         continue
       }
 
       const layerPose = pose[id]
-      if (!layerPose) continue
+      if (!layerPose) {
+        layer.removeAttribute('transform')
+        if (defaults?.opacity) layer.setAttribute('opacity', defaults.opacity)
+        else layer.removeAttribute('opacity')
+        continue
+      }
 
       if (layerPose.transform) {
         layer.setAttribute('transform', layerPose.transform)
+      } else {
+        layer.removeAttribute('transform')
       }
 
       if (layerPose.d && path) {

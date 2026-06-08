@@ -38,6 +38,18 @@ let ``Compare response round-trips JSON with tagged segments`` () =
     Assert.Contains(CompareSegment.Substitution("t", "d"), restored.Segments)
 
 [<Fact>]
+let ``Compare pipeline coaches ae to ih substitution for pat vs pit`` () =
+    let ref = [ segment "p" 0 80; segment "æ" 80 180; segment "t" 180 280 ]
+    let user = [ segment "p" 0 80; segment "ɪ" 80 180; segment "t" 180 280 ]
+
+    let response = ComparePipeline.compare "en-US" ref user
+
+    Assert.Contains(CompareSegment.Substitution("æ", "ɪ"), response.Segments)
+    Assert.Single(response.Coaching) |> ignore
+    Assert.Contains("pat", response.Coaching.[0].Message)
+    Assert.Contains("pit", response.Coaching.[0].Message)
+
+[<Fact>]
 let ``Coaching dedupes repeated substitution pairs`` () =
     let ref = [ segment "t" 0 50; segment "t" 50 100 ]
     let user = [ segment "d" 0 50; segment "d" 50 100 ]

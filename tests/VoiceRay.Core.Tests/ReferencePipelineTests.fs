@@ -35,3 +35,9 @@ let ``Phoneme timeline spans full duration`` () =
     Assert.Equal(3, segments.Length)
     Assert.Equal(0, segments.[0].StartMs)
     Assert.Equal(300, segments.[2].EndMs)
+
+[<Fact>]
+let ``G2pStub maps whisper pit transcript when practicing pat`` () =
+    match G2pStub.tryParseTranscriptForPractice "pat" "pit" with
+    | Some "pit" -> ()
+    | other -> Assert.Fail($"Expected pit, got {other}")

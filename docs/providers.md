@@ -18,6 +18,10 @@
 
 ### Provision Piper (Windows)
 
+**Preferred:** open the VoiceRay UI — the app downloads Piper automatically on first reference load, or use **Set up speech engine** in the header. The API also exposes `POST /api/v1/provision/speech`.
+
+Manual fallback:
+
 ```powershell
 .\scripts\provision-piper.ps1
 ```

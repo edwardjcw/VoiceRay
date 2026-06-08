@@ -4,6 +4,7 @@ open System
 open System.IO
 open System.Threading.Tasks
 open Microsoft.AspNetCore.Builder
+open Microsoft.AspNetCore.Hosting
 open Microsoft.AspNetCore.Http
 open VoiceRay.Core
 open VoiceRay.Infrastructure
@@ -27,8 +28,34 @@ module ApiContractEndpoints =
                 statusCode = StatusCodes.Status400BadRequest)
         | Error ReferenceServiceError.TtsUnavailable ->
             Results.Json(
-                {| error = "Piper TTS is not available; provision models/piper (see docs/providers.md)." |},
+                {| error = "Speech engine is not ready. Use setup in the app to download it."
+                   code = "speech_not_ready"
+                   canProvision = OperatingSystem.IsWindows() |},
                 statusCode = StatusCodes.Status503ServiceUnavailable)
+
+    let handleSetupStatus (env: IWebHostEnvironment) (piper: PiperOptions) (alignment: AlignmentOptions) : IResult =
+        Results.Json(SetupProvisioner.buildStatus (RepoPaths.resolveRepoRoot env.ContentRootPath) piper alignment)
+
+    let handleSetupRun (env: IWebHostEnvironment) (piper: PiperOptions) (alignment: AlignmentOptions) : IResult =
+        let status = SetupProvisioner.buildStatus (RepoPaths.resolveRepoRoot env.ContentRootPath) piper alignment
+
+        if status.ready then
+            Results.Json(
+                {| state = "succeeded"
+                   message = "All required resources are already ready." |})
+        elif SetupProvisioner.startBackground (RepoPaths.resolveRepoRoot env.ContentRootPath) piper alignment then
+            Results.Json(
+                {| state = "running"
+                   message = "Setup started. Poll GET /api/v1/setup/status for progress." |},
+                statusCode = StatusCodes.Status202Accepted)
+        else
+            Results.Json(
+                SetupProvisioner.buildStatus (RepoPaths.resolveRepoRoot env.ContentRootPath) piper alignment,
+                statusCode = StatusCodes.Status409Conflict)
+
+    /// Legacy alias — starts full resource setup (not Piper-only).
+    let handleProvisionSpeech (env: IWebHostEnvironment) (piper: PiperOptions) (alignment: AlignmentOptions) : IResult =
+        handleSetupRun env piper alignment
 
     let handleAnalyze (form: IFormCollection) (service: AnalyzeService) : Task<IResult> =
         task {
@@ -81,6 +108,19 @@ module ApiContractEndpoints =
                 {| error = "locale must be en-US for compare (demo MVP)." |},
                 statusCode = StatusCodes.Status400BadRequest)
 
+    let mapSetupEndpoints (app: WebApplication) =
+        app.MapGet(
+            "/api/v1/setup/status",
+            Func<IWebHostEnvironment, PiperOptions, AlignmentOptions, IResult>(handleSetupStatus))
+        |> ignore
+
+        app.MapPost(
+            "/api/v1/setup/run",
+            Func<IWebHostEnvironment, PiperOptions, AlignmentOptions, IResult>(handleSetupRun))
+        |> ignore
+
+        app
+
     /// Registers `POST /api/v1/reference`, `analyze`, and `compare` with OpenAPI metadata.
     let mapContractEndpoints (app: WebApplication) =
         app.MapPost(
@@ -88,14 +128,21 @@ module ApiContractEndpoints =
             Func<ReferenceRequest, ReferenceService, IResult>(handleReference))
         |> ignore
 
-        app.MapPost(
-            "/api/v1/analyze",
-            Func<IFormCollection, AnalyzeService, Task<IResult>>(handleAnalyze))
+        app
+            .MapPost(
+                "/api/v1/analyze",
+                Func<IFormCollection, AnalyzeService, Task<IResult>>(handleAnalyze))
+            .DisableAntiforgery()
         |> ignore
 
         app.MapPost(
             "/api/v1/compare",
             Func<CompareRequest, CompareService, IResult>(handleCompare))
+        |> ignore
+
+        app.MapPost(
+            "/api/v1/provision/speech",
+            Func<IWebHostEnvironment, PiperOptions, AlignmentOptions, IResult>(handleProvisionSpeech))
         |> ignore
 
         app

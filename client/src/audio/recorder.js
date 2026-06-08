@@ -7,6 +7,18 @@ const TARGET_RATE = 16000
  * @returns {Promise<{ stop: () => void; blob: Promise<Blob> }>}
  */
 async function startRecordingStub() {
+  const fixtureUrl =
+    typeof window !== 'undefined' ? window.__VOICERAY_E2E_FIXTURE_URL__ : undefined
+
+  if (fixtureUrl) {
+    const response = await fetch(fixtureUrl)
+    if (!response.ok) {
+      throw new Error(`E2E fixture fetch failed (${response.status}): ${fixtureUrl}`)
+    }
+    const blob = await response.blob()
+    return { stop: () => {}, blob: Promise.resolve(blob) }
+  }
+
   const samples = new Float32Array(1600)
   const blob = encodeWav16Mono(samples, 16000)
   return { stop: () => {}, blob: Promise.resolve(blob) }
@@ -37,7 +49,7 @@ export async function startRecording(options = {}) {
 
   let stopped = false
 
-  const blob = new Promise<Blob>((resolve, reject) => {
+  const blob = new Promise((resolve, reject) => {
     recorder.onstop = async () => {
       try {
         stream.getTracks().forEach((t) => t.stop())

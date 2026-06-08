@@ -1,3 +1,5 @@
+import { throwApiError, startActivityPolling } from './setup.js'
+
 /** @returns {string} API origin without trailing slash; empty string uses same-origin (Vite dev proxy). */
 export function getApiBaseUrl() {
   const configured = import.meta.env?.VITE_API_BASE_URL
@@ -22,38 +24,46 @@ export function resolveApiPath(path) {
 /**
  * @typedef {{ ipa: string; startMs: number; endMs: number }} PhonemeSegment
  * @typedef {{ ipa: string; startMs: number; endMs: number; layers: object; highlight?: string[] }} ArticulatoryKeyframe
- * @typedef {{ alignmentEngine: string; computeDevice: string; deviceBanner: string; sampleRateHz: number; channels: number }} AnalyzeMetadata
+ * @typedef {{ alignmentEngine: string; computeDevice: string; deviceBanner: string; sampleRateHz: number; channels: number; phonemeInference?: string; inferredWord?: string; inferenceNote?: string }} AnalyzeMetadata
  * @typedef {{ audioUrl?: string; audioBase64?: string; phonemes: PhonemeSegment[]; keyframes: ArticulatoryKeyframe[]; ipaDisplay: string }} ReferenceResponse
  * @typedef {{ phonemes: PhonemeSegment[]; keyframes: ArticulatoryKeyframe[]; scores: object[]; audioEcho?: string; metadata: AnalyzeMetadata }} AnalyzeResponse
  * @typedef {{ segments: object[]; coaching: { message: string; highlightLayers?: string[]; referenceIpa?: string; userIpa?: string }[] }} CompareResponse
  */
 
-/**
- * @returns {Promise<{ status: string; product?: string; speechProvider?: string }>}
- */
-export async function fetchHealth() {
-  const response = await fetch(resolveApiPath('/api/v1/health'))
-  if (!response.ok) {
-    throw new Error(`Health check failed: ${response.status}`)
-  }
-  return response.json()
-}
+export {
+  fetchHealth,
+  ensureSpeechReady,
+  speechFromHealth,
+  postProvisionSpeech,
+  fetchSetupStatus,
+  postSetupRun,
+  waitForSetupReady,
+} from './speechSetup.js'
 
 /**
  * @param {{ text: string; locale: string }} body
  * @returns {Promise<ReferenceResponse>}
  */
-export async function postReference(body) {
-  const response = await fetch(resolveApiPath('/api/v1/reference'), {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  })
-  if (!response.ok) {
-    const detail = await response.text().catch(() => '')
-    throw new Error(`Reference failed (${response.status})${detail ? `: ${detail}` : ''}`)
+/**
+ * @param {{ text: string; locale: string }} body
+ * @param {{ onActivity?: (status: import('./setup.js').SetupStatus) => void }} [options]
+ */
+export async function postReference(body, options = {}) {
+  const stopPoll = options.onActivity ? startActivityPolling(options.onActivity) : () => {}
+
+  try {
+    const response = await fetch(resolveApiPath('/api/v1/reference'), {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    })
+    if (!response.ok) {
+      return throwApiError(response)
+    }
+    return response.json()
+  } finally {
+    stopPoll()
   }
-  return response.json()
 }
 
 /**

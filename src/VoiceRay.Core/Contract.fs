@@ -92,7 +92,13 @@ type AnalyzeMetadata =
       [<JsonPropertyName("sampleRateHz")>]
       SampleRateHz: int
       [<JsonPropertyName("channels")>]
-      Channels: int }
+      Channels: int
+      [<JsonPropertyName("phonemeInference")>]
+      PhonemeInference: string option
+      [<JsonPropertyName("inferredWord")>]
+      InferredWord: string option
+      [<JsonPropertyName("inferenceNote")>]
+      InferenceNote: string option }
 
 /// `POST /api/v1/analyze` JSON response (multipart request; see docs/api.md).
 type AnalyzeResponse =
