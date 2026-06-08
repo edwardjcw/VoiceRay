@@ -5,21 +5,33 @@ export async function installMockApi(page) {
       ipa: 'p',
       startMs: 0,
       endMs: 100,
-      layers: {
-        tongue: {
-          d: 'M 46 96 Q 58 82 78 78 Q 92 76 98 88 Q 100 96 92 102 Q 78 108 62 106 Q 50 102 46 96 Z',
-        },
+      pose: {
+        jawOpen: 0.1,
+        tongueHeight: 0.4,
+        tongueBackness: 0.45,
+        tongueTip: 0,
+        interdental: 0,
+        lipRounding: 0,
+        lipClosure: 1,
+        velum: 0,
       },
+      highlight: ['bilabial'],
     },
     {
       ipa: 'æ',
       startMs: 100,
       endMs: 250,
-      layers: {
-        tongue: {
-          d: 'M 44 118 Q 58 128 88 132 Q 118 134 132 128 Q 140 120 136 108 Q 128 98 98 96 Q 68 96 52 104 Q 44 110 44 118 Z',
-        },
+      pose: {
+        jawOpen: 0.82,
+        tongueHeight: 0.18,
+        tongueBackness: 0.2,
+        tongueTip: 0,
+        interdental: 0,
+        lipRounding: 0,
+        lipClosure: 0,
+        velum: 0,
       },
+      highlight: ['open_vowel'],
     },
   ]
 

@@ -14,12 +14,34 @@ type PhonemeSegment =
       [<JsonPropertyName("endMs")>]
       EndMs: int }
 
-/// SVG layer pose: CSS/SVG transform and/or path `d` morph.
-type LayerPose =
-    { [<JsonPropertyName("transform")>]
-      Transform: string option
-      [<JsonPropertyName("d")>]
-      D: string option }
+/// Articulatory pose: normalized (0..1) articulator parameters that the
+/// frontend rig converts into sagittal geometry. Decouples phonetics (backend)
+/// from rig geometry (frontend `SagittalPlayer`).
+type ArticulatoryPose =
+    { /// Mandible aperture: 0 = closed, 1 = wide open.
+      [<JsonPropertyName("jawOpen")>]
+      JawOpen: float
+      /// Tongue body height: 0 = low, 1 = high (close to palate).
+      [<JsonPropertyName("tongueHeight")>]
+      TongueHeight: float
+      /// Tongue body advancement: 0 = front, 1 = back (toward pharynx).
+      [<JsonPropertyName("tongueBackness")>]
+      TongueBackness: float
+      /// Tongue tip raising toward the alveolar ridge (coronals): 0..1.
+      [<JsonPropertyName("tongueTip")>]
+      TongueTip: float
+      /// Tongue tip protrusion between the teeth (interdental θ/ð): 0..1.
+      [<JsonPropertyName("interdental")>]
+      Interdental: float
+      /// Lip rounding/protrusion: 0 = spread/neutral, 1 = rounded.
+      [<JsonPropertyName("lipRounding")>]
+      LipRounding: float
+      /// Lip closure (bilabials): 0 = open, 1 = sealed.
+      [<JsonPropertyName("lipClosure")>]
+      LipClosure: float
+      /// Velum (soft palate): 0 = raised/oral, 1 = lowered/nasal.
+      [<JsonPropertyName("velum")>]
+      Velum: float }
 
 /// Animation keyframe for one phoneme window on the sagittal rig.
 type ArticulatoryKeyframe =
@@ -29,8 +51,8 @@ type ArticulatoryKeyframe =
       StartMs: int
       [<JsonPropertyName("endMs")>]
       EndMs: int
-      [<JsonPropertyName("layers")>]
-      Layers: Map<string, LayerPose>
+      [<JsonPropertyName("pose")>]
+      Pose: ArticulatoryPose
       [<JsonPropertyName("highlight")>]
       Highlight: string list }
 

@@ -1,124 +1,189 @@
 /**
- * Layered sagittal vocal-tract player (Phase 1).
- * Applies discrete poses to groups in client/public/vocal-tract.svg.
+ * Layered sagittal vocal-tract player.
+ *
+ * The backend emits per-phoneme {@link ArticulatoryPose} feature vectors
+ * (normalized 0..1 articulator parameters). This player converts those features
+ * into SVG geometry for the rig in `client/public/vocal-tract.svg` and smoothly
+ * interpolates between phonemes for natural coarticulation.
  */
 
-/** @type {readonly string[]} */
+/** SVG group ids present in the rig (animated + landmark groups for highlights). */
 export const LAYER_IDS = [
   'outline',
   'palate',
+  'pharynx',
+  'velum',
   'jaw',
   'teeth_upper',
   'teeth_lower',
+  'tongue',
+  'tongue_tip',
   'lips_upper',
   'lips_lower',
-  'tongue',
-  'velum',
   'glottis_hint',
 ]
 
 /**
- * @typedef {Object} LayerPose
- * @property {string} [transform]
- * @property {string} [d]
+ * @typedef {Object} ArticulatoryPose
+ * @property {number} jawOpen        0 closed .. 1 open
+ * @property {number} tongueHeight   0 low .. 1 high
+ * @property {number} tongueBackness 0 front .. 1 back
+ * @property {number} tongueTip      0 neutral .. 1 raised to alveolar ridge
+ * @property {number} interdental    0 .. 1 tip protruded between teeth
+ * @property {number} lipRounding    0 spread .. 1 rounded
+ * @property {number} lipClosure     0 open .. 1 sealed
+ * @property {number} velum          0 raised/oral .. 1 lowered/nasal
  */
 
-/**
- * @typedef {Record<string, LayerPose>} ArticulatoryPose
- */
-
-/** Neutral — matches traced reference resting articulation. */
-export const NEUTRAL_POSE = /** @type {ArticulatoryPose} */ ({})
-
-/** Five pedagogical test poses for local dev / unit checks. */
-export const TEST_POSES = /** @type {Record<string, ArticulatoryPose>} */ ({
-  'high-front-vowel': {
-    lips_upper: { transform: 'translate(0,-2) scale(1.02,0.92)' },
-    lips_lower: { transform: 'translate(0,-1) scale(1.05,0.9)' },
-    jaw: { transform: 'translate(0,2) rotate(-2 80 160)' },
-    tongue: {
-      d: 'M 52 98 Q 72 72 102 74 Q 128 78 138 96 Q 142 112 128 124 Q 108 132 82 128 Q 58 122 52 98 Z',
-    },
-    velum: { transform: 'translate(0,0)' },
-  },
-  'open-vowel': {
-    lips_upper: { transform: 'translate(0,1)' },
-    lips_lower: { transform: 'translate(0,6) scale(1,1.08)' },
-    jaw: { transform: 'translate(0,10) rotate(6 80 160)' },
-    teeth_lower: { transform: 'translate(0,8)' },
-    tongue: {
-      d: 'M 44 118 Q 58 128 88 132 Q 118 134 132 128 Q 140 120 136 108 Q 128 98 98 96 Q 68 96 52 104 Q 44 110 44 118 Z',
-    },
-    velum: { transform: 'translate(0,2)' },
-  },
-  'rounded-back': {
-    lips_upper: { transform: 'translate(-4,2) scale(0.92,1.12)' },
-    lips_lower: { transform: 'translate(-6,4) scale(0.9,1.15)' },
-    jaw: { transform: 'translate(-2,4)' },
-    tongue: {
-      d: 'M 56 112 Q 78 108 108 114 Q 132 122 140 136 Q 144 150 128 158 Q 102 164 72 158 Q 54 150 52 136 Q 52 122 56 112 Z',
-    },
-    velum: { transform: 'translate(2,0)' },
-  },
-  'alveolar-stop': {
-    lips_upper: { transform: 'translate(0,0)' },
-    lips_lower: { transform: 'translate(0,2)' },
-    jaw: { transform: 'translate(0,3)' },
-    tongue: {
-      d: 'M 46 96 Q 58 82 78 78 Q 92 76 98 88 Q 100 96 92 102 Q 78 108 62 106 Q 50 102 46 96 Z',
-    },
-    velum: { transform: 'translate(0,0)' },
-  },
-  'bilabial-closure': {
-    lips_upper: { transform: 'translate(0,4) scale(1,0.85)' },
-    lips_lower: { transform: 'translate(0,-2) scale(1,0.88)' },
-    jaw: { transform: 'translate(0,2)' },
-    tongue: {
-      d: 'M 48 108 Q 62 100 88 102 Q 118 106 132 118 Q 142 128 138 142 Q 132 156 108 162 Q 82 166 62 158 Q 48 150 44 136 Q 42 122 48 108 Z',
-    },
-    velum: { transform: 'translate(0,0)' },
-  },
+/** Resting articulation — mirrors `PoseMap.neutral` on the backend. */
+export const NEUTRAL_POSE = /** @type {ArticulatoryPose} */ ({
+  jawOpen: 0.35,
+  tongueHeight: 0.45,
+  tongueBackness: 0.45,
+  tongueTip: 0,
+  interdental: 0,
+  lipRounding: 0,
+  lipClosure: 0,
+  velum: 0,
 })
 
+/** Coarticulation ramp (ms) used to ease from the previous phoneme's pose. */
+const RAMP_MS = 70
+
+/** Pedagogical reference poses for local dev / unit checks. */
+export const TEST_POSES = /** @type {Record<string, ArticulatoryPose>} */ ({
+  'high-front-vowel': { ...NEUTRAL_POSE, tongueHeight: 0.95, tongueBackness: 0.15, jawOpen: 0.2 },
+  'open-vowel': { ...NEUTRAL_POSE, tongueHeight: 0.1, tongueBackness: 0.9, jawOpen: 0.9 },
+  'rounded-back': { ...NEUTRAL_POSE, tongueHeight: 0.9, tongueBackness: 0.9, lipRounding: 0.9, jawOpen: 0.2 },
+  'alveolar-stop': { ...NEUTRAL_POSE, tongueTip: 1, tongueHeight: 0.55, tongueBackness: 0.2, jawOpen: 0.18 },
+  'bilabial-closure': { ...NEUTRAL_POSE, lipClosure: 1, jawOpen: 0.1, tongueHeight: 0.4 },
+})
+
+const lerp = (a, b, t) => a + (b - a) * t
+const clamp01 = (v) => (v < 0 ? 0 : v > 1 ? 1 : v)
+
+/**
+ * @param {ArticulatoryPose} a
+ * @param {ArticulatoryPose} b
+ * @param {number} t
+ * @returns {ArticulatoryPose}
+ */
+export function lerpPose(a, b, t) {
+  const out = /** @type {ArticulatoryPose} */ ({})
+  for (const key of Object.keys(NEUTRAL_POSE)) {
+    out[key] = lerp(a[key] ?? NEUTRAL_POSE[key], b[key] ?? NEUTRAL_POSE[key], t)
+  }
+  return out
+}
+
+// ---- Geometry generators (rig coordinate space matches vocal-tract.svg) ----
+
+/** Tongue body is the traced reference path translated by articulation. */
+export function tongueTransform(p) {
+  const tx = (p.tongueBackness - 0.45) * 46 // back → toward pharynx (+x)
+  const ty = -(p.tongueHeight - 0.45) * 78 + (p.jawOpen - 0.35) * 46 // high → up; open jaw → down
+  return `translate(${tx.toFixed(2)} ${ty.toFixed(2)})`
+}
+
+/** Coronal tip lobe rising from the tongue front toward the alveolar ridge. */
+export function tongueTipPath(p) {
+  const t = Math.max(p.tongueTip, p.interdental)
+  if (t < 0.02) return ''
+  const baseX = 92
+  const baseY = 200
+  const ridgeX = 95 - p.interdental * 24 // interdental pushes the tip past the teeth
+  const ridgeY = lerp(200, 178, t) + p.interdental * 6
+  const w = 14
+  return `M ${baseX - w} ${baseY} Q ${ridgeX - 6} ${ridgeY - 1} ${ridgeX} ${ridgeY} Q ${ridgeX + 9} ${ridgeY + 3} ${baseX + w} ${baseY} Q ${baseX} ${baseY + 9} ${baseX - w} ${baseY} Z`
+}
+
+/** Soft palate: raised seals the nasal port, lowered swings toward the tongue. */
+export function velumPath(p) {
+  const hingeX = 288
+  const hingeY = 150
+  const drop = p.velum
+  const tipX = lerp(304, 280, drop)
+  const tipY = lerp(196, 250, drop)
+  const midX = lerp(302, 294, drop)
+  const midY = lerp(172, 208, drop)
+  return `M ${hingeX} ${hingeY} Q ${midX + 8} ${midY} ${tipX} ${tipY} Q ${midX} ${midY + 6} ${hingeX - 8} ${hingeY + 8} Z`
+}
+
+function lipEllipse(cx, cy, rx, ry) {
+  return `M ${cx - rx} ${cy} C ${cx - rx} ${cy - ry}, ${cx + rx} ${cy - ry}, ${cx + rx} ${cy} C ${cx + rx} ${cy + ry}, ${cx - rx} ${cy + ry}, ${cx - rx} ${cy} Z`
+}
+
+export function lipsUpperPath(p) {
+  const round = p.lipRounding
+  const close = p.lipClosure
+  const cx = 58 - round * 8 // rounding protrudes forward
+  const cy = lerp(157, 163, close) // closed lip drops to meet
+  const rx = 15 - round * 5 // rounding narrows the aperture
+  const ry = 7 + round * 3
+  return lipEllipse(cx, cy, rx, ry)
+}
+
+export function lipsLowerPath(p) {
+  const round = p.lipRounding
+  const close = p.lipClosure
+  const jaw = p.jawOpen
+  const cx = 59 - round * 8
+  const cy = lerp(175, 167, close) + jaw * 7
+  const rx = 15 - round * 5
+  const ry = 8 + round * 3
+  return lipEllipse(cx, cy, rx, ry)
+}
+
+/**
+ * Resolve the interpolated pose for a time, easing in from the previous phoneme.
+ * @param {Array<{ pose?: ArticulatoryPose; startMs?: number; endMs?: number }>} keyframes
+ * @param {number} timeMs
+ * @returns {ArticulatoryPose}
+ */
+export function poseAtTime(keyframes, timeMs) {
+  if (!keyframes?.length) return { ...NEUTRAL_POSE }
+  let idx = 0
+  for (let i = 0; i < keyframes.length; i += 1) {
+    const start = keyframes[i].startMs ?? 0
+    if (timeMs >= start) idx = i
+  }
+  const cur = keyframes[idx].pose ?? NEUTRAL_POSE
+  const prev = idx > 0 ? keyframes[idx - 1].pose ?? NEUTRAL_POSE : NEUTRAL_POSE
+  const start = keyframes[idx].startMs ?? 0
+  const ramp = clamp01((timeMs - start) / RAMP_MS)
+  return lerpPose(prev, cur, ramp)
+}
+
 export class SagittalPlayer {
-  /**
-   * @param {SVGElement | null} root
-   */
+  /** @param {SVGElement | null} root */
   constructor(root) {
     this.root = root
     /** @type {ArticulatoryPose} */
     this.currentPose = { ...NEUTRAL_POSE }
-    /** @type {Map<string, { transform: string | null; d: string | null }>} */
-    this._defaults = new Map()
-    if (root) {
-      this._captureDefaults()
-      this.resetToNeutral()
-    }
-  }
-
-  _captureDefaults() {
-    for (const id of LAYER_IDS) {
-      const layer = this.getLayer(id)
-      if (!layer) continue
-      const path = layer.querySelector('path')
-      this._defaults.set(id, {
-        transform: layer.getAttribute('transform'),
-        d: path?.getAttribute('d') ?? null,
-        opacity: layer.getAttribute('opacity'),
-      })
-    }
+    if (root) this.applyPose(NEUTRAL_POSE)
   }
 
   /** @returns {Element | null} */
   getLayer(id) {
     if (!this.root) return null
-    const el = this.root.querySelector(`#${id}`)
-    return el ?? null
+    return this.root.querySelector(`#${id}`) ?? null
+  }
+
+  /** @param {string} id @param {string} d */
+  _setPath(id, d) {
+    const layer = this.getLayer(id)
+    const path = layer?.querySelector('path')
+    if (path) path.setAttribute('d', d)
+  }
+
+  /** @param {string} id @param {string} transform */
+  _setTransform(id, transform) {
+    const layer = this.getLayer(id)
+    if (layer) layer.setAttribute('transform', transform)
   }
 
   resetToNeutral() {
-    this.applyPose(NEUTRAL_POSE, { restoreDefaults: true })
-    this.currentPose = { ...NEUTRAL_POSE }
+    this.applyPose(NEUTRAL_POSE)
   }
 
   /**
@@ -133,85 +198,40 @@ export class SagittalPlayer {
   }
 
   /**
+   * Render a full articulatory pose onto the rig.
    * @param {ArticulatoryPose} pose
-   * @param {{ restoreDefaults?: boolean }} [options]
    */
-  applyPose(pose, options = {}) {
+  applyPose(pose) {
     if (!this.root) return
-
-    const restore = options.restoreDefaults === true
-    for (const id of LAYER_IDS) {
-      const layer = this.getLayer(id)
-      if (!layer) continue
-      const path = layer.querySelector('path')
-      const defaults = this._defaults.get(id)
-
-      if (restore && defaults) {
-        if (defaults.transform) layer.setAttribute('transform', defaults.transform)
-        else layer.removeAttribute('transform')
-        if (path && defaults.d) path.setAttribute('d', defaults.d)
-        if (defaults.opacity) layer.setAttribute('opacity', defaults.opacity)
-        else layer.removeAttribute('opacity')
-        continue
-      }
-
-      const layerPose = pose[id]
-      if (!layerPose) {
-        layer.removeAttribute('transform')
-        if (defaults?.opacity) layer.setAttribute('opacity', defaults.opacity)
-        else layer.removeAttribute('opacity')
-        continue
-      }
-
-      if (layerPose.transform) {
-        layer.setAttribute('transform', layerPose.transform)
-      } else {
-        layer.removeAttribute('transform')
-      }
-
-      if (layerPose.d && path) {
-        path.setAttribute('d', layerPose.d)
-      }
-    }
-
-    this.currentPose = { ...pose }
+    const p = { ...NEUTRAL_POSE, ...pose }
+    const transform = tongueTransform(p)
+    this._setTransform('tongue', transform)
+    this._setTransform('tongue_tip', transform)
+    this._setPath('tongue_tip', tongueTipPath(p))
+    this._setPath('velum', velumPath(p))
+    this._setPath('lips_upper', lipsUpperPath(p))
+    this._setPath('lips_lower', lipsLowerPath(p))
+    this.currentPose = p
   }
 
   /**
-   * @param {Array<{ layers?: ArticulatoryPose; startMs?: number; endMs?: number }>} keyframes
+   * @param {Array<{ pose?: ArticulatoryPose; startMs?: number; endMs?: number }>} keyframes
    * @param {number} [timeMs]
    */
   playKeyframes(keyframes, timeMs = 0) {
     if (!this.root || !keyframes?.length) return
-
-    let active = keyframes[0]
-    for (const frame of keyframes) {
-      const start = frame.startMs ?? 0
-      const end = frame.endMs ?? Number.POSITIVE_INFINITY
-      if (timeMs >= start && timeMs < end) {
-        active = frame
-        break
-      }
-      if (timeMs >= end) active = frame
-    }
-
-    if (active?.layers) {
-      this.applyPose(active.layers)
-    }
+    this.applyPose(poseAtTime(keyframes, timeMs))
   }
 
   /**
-   * Mark layers as ghost reference overlay (styling via CSS).
+   * Render a pose as a ghost reference overlay (styled via CSS).
    * @param {ArticulatoryPose | null | undefined} pose
    */
   applyGhostPose(pose) {
     if (!this.root) return
     const ghostClass = 'voiceray-ghost-layer'
     for (const id of LAYER_IDS) {
-      const layer = this.getLayer(id)
-      if (!layer) continue
-      layer.classList.remove(ghostClass)
-      if (pose?.[id]) layer.classList.add(ghostClass)
+      this.getLayer(id)?.classList.add(ghostClass)
     }
     if (pose) this.applyPose(pose)
   }

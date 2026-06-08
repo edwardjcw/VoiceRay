@@ -1,189 +1,108 @@
 namespace VoiceRay.Core
 
-/// IPA → sagittal layer poses for `en-US` (aligned with `client/src/animation/SagittalPlayer.js` test poses).
+/// IPA → articulatory pose for `en-US`. Emits normalized articulator parameters
+/// (height/backness/rounding/tip/closure/velum) grounded in the IPA vowel chart
+/// and consonant place/manner. The frontend `SagittalPlayer` renders geometry.
 module PoseMap =
     type PoseEntry =
-        { Layers: Map<string, LayerPose>
+        { Pose: ArticulatoryPose
           Highlight: string list }
 
-    let private layer transform d =
-        { Transform = transform
-          D = d }
+    /// Resting articulation (schwa-like). Matches the rig neutral pose.
+    let neutral: ArticulatoryPose =
+        { JawOpen = 0.35
+          TongueHeight = 0.45
+          TongueBackness = 0.45
+          TongueTip = 0.0
+          Interdental = 0.0
+          LipRounding = 0.0
+          LipClosure = 0.0
+          Velum = 0.0 }
 
-    let private bilabialStop =
-        { Layers =
-            Map.ofList
-                [ "lips_upper", layer (Some "translate(0,4) scale(1,0.85)") None
-                  "lips_lower", layer (Some "translate(0,-2) scale(1,0.88)") None
-                  "jaw", layer (Some "translate(0,2)") None
-                  "tongue",
-                  layer
-                      None
-                      (Some
-                          "M 48 108 Q 62 100 88 102 Q 118 106 132 118 Q 142 128 138 142 Q 132 156 108 162 Q 82 166 62 158 Q 48 150 44 136 Q 42 122 48 108 Z") ]
-          Highlight = [ "bilabial" ] }
+    let private pose
+        (jawOpen, tongueHeight, tongueBackness, tongueTip, interdental, lipRounding, lipClosure, velum)
+        highlight
+        =
+        { Pose =
+            { JawOpen = jawOpen
+              TongueHeight = tongueHeight
+              TongueBackness = tongueBackness
+              TongueTip = tongueTip
+              Interdental = interdental
+              LipRounding = lipRounding
+              LipClosure = lipClosure
+              Velum = velum }
+          Highlight = highlight }
 
-    let private alveolarStop =
-        { Layers =
-            Map.ofList
-                [ "lips_upper", layer (Some "translate(0,0)") None
-                  "lips_lower", layer (Some "translate(0,2)") None
-                  "jaw", layer (Some "translate(0,3)") None
-                  "tongue",
-                  layer
-                      None
-                      (Some "M 46 96 Q 58 82 78 78 Q 92 76 98 88 Q 100 96 92 102 Q 78 108 62 106 Q 50 102 46 96 Z") ]
-          Highlight = [ "tongue_tip"; "alveolar" ] }
+    // Vowels: height (≈ inverse F1 / jaw), backness (≈ inverse F2), rounding.
+    //                         jaw  hgt  bak  tip  intr rnd  cls  vel
+    let private vowelAe = pose (0.82, 0.18, 0.20, 0.0, 0.0, 0.0, 0.0, 0.0) [ "open_vowel" ]
+    let private vowelEh = pose (0.55, 0.42, 0.25, 0.0, 0.0, 0.0, 0.0, 0.0) [ "mid_front_vowel" ]
+    let private vowelIh = pose (0.32, 0.72, 0.28, 0.0, 0.0, 0.0, 0.0, 0.0) [ "high_front_vowel" ]
+    let private vowelIy = pose (0.20, 0.95, 0.15, 0.0, 0.0, 0.0, 0.0, 0.0) [ "high_front_vowel" ]
+    let private vowelAh = pose (0.90, 0.10, 0.90, 0.0, 0.0, 0.0, 0.0, 0.0) [ "open_back_vowel" ]
+    let private vowelUh = pose (0.34, 0.70, 0.80, 0.0, 0.0, 0.65, 0.0, 0.0) [ "rounded_back_vowel" ]
+    let private vowelAo = pose (0.60, 0.35, 0.85, 0.0, 0.0, 0.60, 0.0, 0.0) [ "rounded_back_vowel" ]
+    let private vowelUw = pose (0.20, 0.90, 0.90, 0.0, 0.0, 0.90, 0.0, 0.0) [ "rounded_back_vowel" ]
+    let private vowelSchwa = pose (0.40, 0.50, 0.50, 0.0, 0.0, 0.0, 0.0, 0.0) [ "mid_central_vowel" ]
 
-    let private velarStop =
-        { Layers =
-            Map.ofList
-                [ "lips_upper", layer (Some "translate(0,1)") None
-                  "lips_lower", layer (Some "translate(0,3)") None
-                  "jaw", layer (Some "translate(0,4)") None
-                  "tongue",
-                  layer
-                      None
-                      (Some "M 40 100 Q 52 88 72 84 Q 96 82 108 94 Q 114 104 104 112 Q 88 118 68 116 Q 52 112 40 100 Z")
-                  "velum", layer (Some "translate(0,0)") None ]
-          Highlight = [ "velar" ] }
-
-    let private openVowel =
-        { Layers =
-            Map.ofList
-                [ "lips_upper", layer (Some "translate(0,1)") None
-                  "lips_lower", layer (Some "translate(0,6) scale(1,1.08)") None
-                  "jaw", layer (Some "translate(0,10) rotate(6 80 160)") None
-                  "teeth_lower", layer (Some "translate(0,8)") None
-                  "tongue",
-                  layer
-                      None
-                      (Some
-                          "M 44 118 Q 58 128 88 132 Q 118 134 132 128 Q 140 120 136 108 Q 128 98 98 96 Q 68 96 52 104 Q 44 110 44 118 Z")
-                  "velum", layer (Some "translate(0,2)") None ]
-          Highlight = [ "open_vowel" ] }
-
-    let private highFrontVowel =
-        { Layers =
-            Map.ofList
-                [ "lips_upper", layer (Some "translate(0,-2) scale(1.02,0.92)") None
-                  "lips_lower", layer (Some "translate(0,-1) scale(1.05,0.9)") None
-                  "jaw", layer (Some "translate(0,2) rotate(-2 80 160)") None
-                  "tongue",
-                  layer
-                      None
-                      (Some "M 52 98 Q 72 72 102 74 Q 128 78 138 96 Q 142 112 128 124 Q 108 132 82 128 Q 58 122 52 98 Z")
-                  "velum", layer (Some "translate(0,0)") None ]
-          Highlight = [ "high_front_vowel" ] }
-
-    let private roundedBackVowel =
-        { Layers =
-            Map.ofList
-                [ "lips_upper", layer (Some "translate(-4,2) scale(0.92,1.12)") None
-                  "lips_lower", layer (Some "translate(-6,4) scale(0.9,1.15)") None
-                  "jaw", layer (Some "translate(-2,4)") None
-                  "tongue",
-                  layer
-                      None
-                      (Some
-                          "M 56 112 Q 78 108 108 114 Q 132 122 140 136 Q 144 150 128 158 Q 102 164 72 158 Q 54 150 52 136 Q 52 122 56 112 Z")
-                  "velum", layer (Some "translate(2,0)") None ]
-          Highlight = [ "rounded_back_vowel" ] }
-
-    let private interdental =
-        { Layers =
-            Map.ofList
-                [ "lips_upper", layer (Some "translate(0,2)") None
-                  "lips_lower", layer (Some "translate(0,4)") None
-                  "jaw", layer (Some "translate(0,5)") None
-                  "tongue",
-                  layer
-                      None
-                      (Some "M 50 94 Q 60 86 74 84 Q 86 84 90 92 Q 92 98 84 102 Q 72 106 58 104 Q 50 100 50 94 Z")
-                  "teeth_upper", layer (Some "translate(0,1)") None ]
-          Highlight = [ "interdental"; "theta" ] }
-
-    let private postAlveolar =
-        { Layers =
-            Map.ofList
-                [ "lips_upper", layer (Some "translate(-2,1)") None
-                  "lips_lower", layer (Some "translate(-2,3)") None
-                  "jaw", layer (Some "translate(0,4)") None
-                  "tongue",
-                  layer
-                      None
-                      (Some "M 48 98 Q 64 86 90 88 Q 118 92 130 106 Q 136 118 124 128 Q 102 136 76 132 Q 56 126 48 110 Q 46 102 48 98 Z") ]
-          Highlight = [ "post_alveolar" ] }
-
-    let private rhotic =
-        { Layers =
-            Map.ofList
-                [ "lips_upper", layer (Some "translate(0,0)") None
-                  "lips_lower", layer (Some "translate(0,2)") None
-                  "jaw", layer (Some "translate(0,3)") None
-                  "tongue",
-                  layer
-                      None
-                      (Some "M 54 104 Q 70 96 96 100 Q 122 106 132 118 Q 138 128 126 134 Q 104 140 80 136 Q 60 130 54 118 Q 52 110 54 104 Z") ]
-          Highlight = [ "rhotic" ] }
-
-    let private nasalVelar =
-        { Layers =
-            Map.ofList
-                [ "lips_upper", layer (Some "translate(0,2)") None
-                  "lips_lower", layer (Some "translate(0,4)") None
-                  "jaw", layer (Some "translate(0,5)") None
-                  "tongue",
-                  layer
-                      None
-                      (Some "M 42 108 Q 56 100 82 102 Q 110 106 124 118 Q 130 128 118 134 Q 96 140 72 136 Q 54 130 42 118 Z")
-                  "velum", layer (Some "translate(0,6)") None ]
-          Highlight = [ "velar"; "nasal" ] }
+    // Consonants.
+    let private bilabialStop = pose (0.10, 0.40, 0.45, 0.0, 0.0, 0.0, 1.0, 0.0) [ "bilabial" ]
+    let private bilabialNasal = pose (0.10, 0.40, 0.45, 0.0, 0.0, 0.0, 1.0, 1.0) [ "bilabial"; "nasal" ]
+    let private alveolarStop = pose (0.18, 0.55, 0.20, 1.0, 0.0, 0.0, 0.0, 0.0) [ "tongue_tip"; "alveolar" ]
+    let private alveolarNasal = pose (0.18, 0.55, 0.20, 1.0, 0.0, 0.0, 0.0, 1.0) [ "tongue_tip"; "alveolar"; "nasal" ]
+    let private lateral = pose (0.22, 0.50, 0.30, 0.80, 0.0, 0.0, 0.0, 0.0) [ "tongue_tip"; "lateral" ]
+    let private velarStop = pose (0.20, 0.88, 0.95, 0.0, 0.0, 0.0, 0.0, 0.0) [ "velar" ]
+    let private velarNasal = pose (0.20, 0.88, 0.95, 0.0, 0.0, 0.0, 0.0, 1.0) [ "velar"; "nasal" ]
+    let private interdental = pose (0.22, 0.50, 0.20, 1.0, 1.0, 0.0, 0.0, 0.0) [ "interdental"; "theta" ]
+    let private postAlveolar = pose (0.28, 0.60, 0.40, 0.55, 0.0, 0.30, 0.0, 0.0) [ "post_alveolar" ]
+    let private rhotic = pose (0.30, 0.55, 0.55, 0.30, 0.0, 0.20, 0.0, 0.0) [ "rhotic" ]
 
     let private enUsMap =
         Map.ofList
             [ "p", bilabialStop
               "b", bilabialStop
+              "m", bilabialNasal
               "t", alveolarStop
               "d", alveolarStop
+              "n", alveolarNasal
+              "l", lateral
               "k", velarStop
               "ɡ", velarStop
               "g", velarStop
-              "æ", openVowel
-              "ɛ", highFrontVowel
-              "ɪ", highFrontVowel
-              "ɑ", openVowel
-              "ʊ", roundedBackVowel
-              "ɔ", roundedBackVowel
+              "ŋ", velarNasal
               "θ", interdental
+              "ð", interdental
               "ʃ", postAlveolar
+              "ʒ", postAlveolar
               "ɹ", rhotic
-              "ŋ", nasalVelar ]
+              "æ", vowelAe
+              "ɛ", vowelEh
+              "ɪ", vowelIh
+              "i", vowelIy
+              "ɑ", vowelAh
+              "ʊ", vowelUh
+              "ɔ", vowelAo
+              "u", vowelUw
+              "ə", vowelSchwa
+              "ɚ", rhotic
+              "ɝ", rhotic ]
 
     let tryGetPose (locale: Locale) (ipa: string) =
-        if locale <> "en-US" then
-            None
-        else
-            enUsMap.TryFind ipa
+        if locale <> "en-US" then None else enUsMap.TryFind ipa
 
+    /// Always emits a keyframe; unknown IPA falls back to the neutral pose so the
+    /// timeline stays visible and the rig returns to rest.
     let keyframeForSegment (locale: Locale) (segment: PhonemeSegment) =
-        match tryGetPose locale segment.Ipa with
-        | Some pose ->
-            Some
-                { Ipa = segment.Ipa
-                  StartMs = segment.StartMs
-                  EndMs = segment.EndMs
-                  Layers = pose.Layers
-                  Highlight = pose.Highlight }
-        | None ->
-            Some
-                { Ipa = segment.Ipa
-                  StartMs = segment.StartMs
-                  EndMs = segment.EndMs
-                  Layers = Map.empty
-                  Highlight = [] }
+        let entry =
+            tryGetPose locale segment.Ipa
+            |> Option.defaultValue { Pose = neutral; Highlight = [] }
+
+        { Ipa = segment.Ipa
+          StartMs = segment.StartMs
+          EndMs = segment.EndMs
+          Pose = entry.Pose
+          Highlight = entry.Highlight }
 
     let keyframesForTimeline (locale: Locale) (phonemes: PhonemeSegment list) =
-        phonemes
-        |> List.choose (keyframeForSegment locale)
-        |> List.filter (fun k -> not k.Layers.IsEmpty)
+        phonemes |> List.map (keyframeForSegment locale)

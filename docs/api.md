@@ -92,9 +92,15 @@ Generates reference TTS audio, IPA phoneme timeline, and articulatory keyframes 
       "ipa": "p",
       "startMs": 0,
       "endMs": 80,
-      "layers": {
-        "lips_upper": { "transform": "translate(0,0)" },
-        "lips_lower": { "transform": "translate(0,2)" }
+      "pose": {
+        "jawOpen": 0.1,
+        "tongueHeight": 0.4,
+        "tongueBackness": 0.45,
+        "tongueTip": 0,
+        "interdental": 0,
+        "lipRounding": 0,
+        "lipClosure": 1,
+        "velum": 0
       },
       "highlight": ["bilabial"]
     }
@@ -234,14 +240,22 @@ Diffs reference vs user phoneme sequences and returns alignment segments plus co
 | `startMs` | int | Inclusive start (ms) |
 | `endMs` | int | Exclusive end (ms) |
 
-### `LayerPose`
+### `ArticulatoryPose`
 
-Per SVG layer id (`lips_upper`, `jaw`, `tongue`, …). At least one of `transform` or `d` should be set when animating.
+Normalized articulator parameters (each `0..1`). The backend emits phonetics; the
+frontend `SagittalPlayer` converts these into sagittal SVG geometry (decoupling
+phonetics from rig geometry). See [`articulatory-model.md`](articulatory-model.md).
 
 | Field | Type | Description |
 | ----- | ---- | ----------- |
-| `transform` | string? | SVG/CSS transform |
-| `d` | string? | Path `d` attribute for morph |
+| `jawOpen` | number | Mandible aperture: 0 closed → 1 open |
+| `tongueHeight` | number | Tongue body height: 0 low → 1 high (≈ inverse F1) |
+| `tongueBackness` | number | Tongue advancement: 0 front → 1 back (≈ inverse F2) |
+| `tongueTip` | number | Tip raise toward alveolar ridge (coronals): 0 → 1 |
+| `interdental` | number | Tip protrusion between teeth (θ/ð): 0 → 1 |
+| `lipRounding` | number | Lip rounding/protrusion: 0 spread → 1 rounded |
+| `lipClosure` | number | Lip closure (bilabials): 0 open → 1 sealed |
+| `velum` | number | Soft palate: 0 raised/oral → 1 lowered/nasal |
 
 ### `ArticulatoryKeyframe`
 
@@ -250,7 +264,7 @@ Per SVG layer id (`lips_upper`, `jaw`, `tongue`, …). At least one of `transfor
 | `ipa` | string | Segment IPA |
 | `startMs` | int | Window start |
 | `endMs` | int | Window end |
-| `layers` | object | Map of layer id → `LayerPose` |
+| `pose` | `ArticulatoryPose` | Articulator parameters for the segment |
 | `highlight` | string[] | UI landmark ids (optional pedagogy) |
 
 ### `PhonemeScore`

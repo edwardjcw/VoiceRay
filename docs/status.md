@@ -101,7 +101,32 @@ None.
 | Post-work npm | 9 unit + 4 Playwright |
 | UI | Practice/record/compare, deviceBanner, ghost overlay |
 
+## 2026-06-08 — Sagittal rig rework (parametric articulators) (`feature/sagittal-rig-rework`)
+
+| Item | Status |
+| ---- | ------ |
+| Branch | `feature/sagittal-rig-rework` |
+| Problem | Sagittal view was a static reference image; old per-layer `transform`/`d` poses were inaccurate |
+| New contract | `Contract.fs`: removed `LayerPose`; `ArticulatoryKeyframe` now carries `ArticulatoryPose` (normalized `0..1` params: jawOpen, tongueHeight, tongueBackness, tongueTip, interdental, lipRounding, lipClosure, velum) |
+| Backend poses | `PoseMap.fs` re-authored: IPA → `ArticulatoryPose` grounded in vowel chart + consonant place/manner; unknown IPA → `neutral` |
+| SVG | `client/public/vocal-tract.svg` rebuilt from `assets/vocal-tract/reference.svg` — traced static anatomy (outline/palate/pharynx) + animated tongue (transform on traced path) + procedural tongue_tip/velum/lips |
+| Frontend rig | `SagittalPlayer.js` rewritten: parametric geometry generators, `applyPose`, `lerpPose`/`poseAtTime` smooth tweening (coarticulation); light theme bg in `style.css` |
+| Docs | `api.md` (ArticulatoryPose schema + example), `articulatory-model.md` (parametric model, layer legend, families) |
+| Pre-work gates | `dotnet test` green; `npm run build` clean (after clearing stale Api/vite locks) |
+| Post-work gates | `dotnet test` 39 pass; `npm run test` 14 unit + 4 Playwright mock e2e pass; `npm run build` clean |
+| UI/API validation | Mock e2e updated (`mockApi.js` emits `pose`); backend test asserts bilabial `LipClosure>0.5`; dev-server smoke load confirms rig mounts neutral pose without console errors |
+| Verification | Production `SagittalPlayer` + real SVG rendered all pose families in browser harness; dev server boot confirmed |
+
+### Wav2Vec2 recommendation (Phase 2 follow-up — not in this PR)
+
+Per user question (`runtime: onnx`, `scope: rig_first`): this PR delivers the **rig first**. The phoneme/alignment replacement is a separate follow-up:
+
+- Replace heuristic alignment (`OssAlignment.fs` even-spread + `UserPhonemeInference.fs` whole-word Whisper match + `AcousticVowelProbe.fs` DSP vowel guess) with **Wav2Vec2 phoneme CTC + forced alignment** via **ONNX Runtime** (in-process, no Python).
+- Suggested model: `facebook/wav2vec2-lv-60-espeak-cv-ft` (IPA output) exported to ONNX; map CTC frames → phoneme timestamps for both `/analyze` (user) and to tighten `/reference` timing.
+- Benefit: real per-phoneme timestamps drive accurate keyframe windows for the new rig and remove the demo-lexicon limitation.
+
 ## Agent notes
 
 - Final PR per user policy; no per-ticket PRs.
 - Phase 4 follow-ups (optional): locale packs, PWA manifest, live MFA HTTP client.
+- Phase 2 follow-up: Wav2Vec2 phoneme alignment via ONNX (see 2026-06-08 entry).

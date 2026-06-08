@@ -23,7 +23,7 @@ export function resolveApiPath(path) {
 
 /**
  * @typedef {{ ipa: string; startMs: number; endMs: number }} PhonemeSegment
- * @typedef {{ ipa: string; startMs: number; endMs: number; layers: object; highlight?: string[] }} ArticulatoryKeyframe
+ * @typedef {{ ipa: string; startMs: number; endMs: number; pose: object; highlight?: string[] }} ArticulatoryKeyframe
  * @typedef {{ alignmentEngine: string; computeDevice: string; deviceBanner: string; sampleRateHz: number; channels: number; phonemeInference?: string; inferredWord?: string; inferenceNote?: string }} AnalyzeMetadata
  * @typedef {{ audioUrl?: string; audioBase64?: string; phonemes: PhonemeSegment[]; keyframes: ArticulatoryKeyframe[]; ipaDisplay: string }} ReferenceResponse
  * @typedef {{ phonemes: PhonemeSegment[]; keyframes: ArticulatoryKeyframe[]; scores: object[]; audioEcho?: string; metadata: AnalyzeMetadata }} AnalyzeResponse
