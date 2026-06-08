@@ -36,9 +36,20 @@ type ReferenceService(options: PiperOptions) =
             match G2pStub.tryLookup request.Locale request.Text with
             | None -> Error G2pUnavailable
             | Some g2p ->
-                match PiperTts.synthesize options request.Text with
-                | Error PiperTtsError.NotConfigured -> Error TtsUnavailable
-                | Error(PiperTtsError.ProcessFailed _) -> Error TtsUnavailable
+                let synthesize () = PiperTts.synthesize options request.Text
+
+                let wavResult : Result<byte[], ReferenceServiceError> =
+                    if not (PiperProvisioner.isReady options) then
+                        Error TtsUnavailable
+                    else
+                        match synthesize () with
+                        | Ok wav -> Ok wav
+                        | Error PiperTtsError.NotConfigured -> Error TtsUnavailable
+                        | Error PiperTtsError.TimedOut -> Error TtsUnavailable
+                        | Error(PiperTtsError.ProcessFailed _) -> Error TtsUnavailable
+
+                match wavResult with
+                | Error _ -> Error TtsUnavailable
                 | Ok wavBytes ->
                     let durationMs =
                         WavDuration.tryGetDurationMs wavBytes

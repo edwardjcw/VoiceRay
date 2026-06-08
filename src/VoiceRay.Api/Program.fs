@@ -1,6 +1,9 @@
 open System
+open System.Threading.Tasks
 open Microsoft.AspNetCore.Builder
+open Microsoft.AspNetCore.Http
 open Microsoft.Extensions.DependencyInjection
+open Microsoft.AspNetCore.Hosting
 open Microsoft.Extensions.Hosting
 open VoiceRay.Api
 open VoiceRay.Core
@@ -17,15 +20,22 @@ let main args =
 
     builder.Services.AddOpenApi() |> ignore
 
-    let piperOptions = PiperOptions.load builder.Configuration builder.Environment.ContentRootPath
-    let alignmentOptions = AlignmentOptions.load builder.Configuration
+    let repoRoot = RepoPaths.resolveRepoRoot builder.Environment.ContentRootPath
+    let piperOptions = PiperOptions.load builder.Configuration repoRoot
+    let alignmentOptions = AlignmentOptions.load builder.Configuration repoRoot
     builder.Services.AddSingleton(piperOptions) |> ignore
     builder.Services.AddSingleton(alignmentOptions) |> ignore
     builder.Services.AddSingleton<ReferenceService>() |> ignore
-    builder.Services.AddSingleton<AnalyzeService>() |> ignore
+    builder.Services.AddSingleton<AnalyzeService>(fun (sp: IServiceProvider) ->
+        let env = sp.GetService(typeof<Microsoft.AspNetCore.Hosting.IWebHostEnvironment>) :?> Microsoft.AspNetCore.Hosting.IWebHostEnvironment
+        AnalyzeService(alignmentOptions, piperOptions, RepoPaths.resolveRepoRoot env.ContentRootPath))
+    |> ignore
     builder.Services.AddSingleton<CompareService>() |> ignore
 
     let app = builder.Build()
+
+    Task.Run(fun () -> WhisperTranscriber.warmUp repoRoot alignmentOptions)
+    |> ignore
 
     let speechProvider =
         builder.Configuration.["Speech:Provider"]
@@ -42,11 +52,18 @@ let main args =
 
     app.MapGet(
         "/api/v1/health",
-        Func<string>(fun () ->
-            $"""{{"status":"ok","product":"{ApplicationInfo.productName}","apiVersion":"{ApplicationInfo.apiVersion}","speechProvider":"{SpeechConfiguration.providerName speechProvider}"}}""")
-    )
+        Func<IWebHostEnvironment, PiperOptions, AlignmentOptions, IResult>(fun env piper alignment ->
+            let capabilities = SpeechCapabilities.build (RepoPaths.resolveRepoRoot env.ContentRootPath) piper alignment
+
+            Results.Json(
+                {| status = "ok"
+                   product = ApplicationInfo.productName
+                   apiVersion = ApplicationInfo.apiVersion
+                   speechProvider = SpeechConfiguration.providerName speechProvider
+                   speech = capabilities |})))
     |> ignore
 
+    ApiContractEndpoints.mapSetupEndpoints app |> ignore
     ApiContractEndpoints.mapContractEndpoints app |> ignore
 
     app.Run()

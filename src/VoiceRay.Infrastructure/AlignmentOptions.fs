@@ -15,8 +15,9 @@ type AlignmentOptions =
 module AlignmentOptions =
     let sectionName = "Speech:Alignment"
 
-    let load (configuration: IConfiguration) =
+    let load (configuration: IConfiguration) (contentRoot: string) =
         let section = configuration.GetSection(sectionName)
+        let repoRoot = RepoPaths.resolveRepoRoot contentRoot
 
         let provider =
             match section.["Provider"] |> Option.ofObj with
@@ -27,6 +28,11 @@ module AlignmentOptions =
             section.GetSection("Whisper").["CacheDir"]
             |> Option.ofObj
             |> Option.filter (not << System.String.IsNullOrWhiteSpace)
+            |> Option.map (fun dir ->
+                if System.IO.Path.IsPathRooted dir then
+                    dir
+                else
+                    System.IO.Path.GetFullPath(System.IO.Path.Combine(repoRoot, dir)))
 
         let mfaUrl =
             section.GetSection("Mfa").["WorkerUrl"]

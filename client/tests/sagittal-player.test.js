@@ -71,6 +71,7 @@ describe('vocal-tract.svg', () => {
       assert.match(markup, new RegExp(`id="${id}"`), `missing #${id}`)
     }
     assert.match(markup, /viewBox="0 0 217 232"/)
+    assert.match(markup, /vocal-tract-reference\.png/)
   })
 })
 

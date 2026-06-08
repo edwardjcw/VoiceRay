@@ -55,4 +55,18 @@ module OssAlignment =
           ComputeDevice = ComputeDevice.deviceName result.Device
           DeviceBanner = ComputeDevice.deviceBanner result.Device
           SampleRateHz = 16000
-          Channels = 1 }
+          Channels = 1
+          PhonemeInference = None
+          InferredWord = None
+          InferenceNote = None }
+
+    let withInference
+        (metadata: AnalyzeMetadata)
+        (inference: string option)
+        (inferredWord: string option)
+        (note: string option)
+        =
+        { metadata with
+            PhonemeInference = inference
+            InferredWord = inferredWord
+            InferenceNote = note }

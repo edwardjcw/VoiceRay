@@ -49,6 +49,7 @@ test.describe('VoiceRay practice / record / compare flows', () => {
     await expect(page.getByTestId('compare-sagittal').locator('.sagittal-user svg')).toBeVisible()
 
     await page.getByTestId('run-compare').click()
+    await expect(page.getByTestId('status-line')).toContainText('Compare ready', { timeout: 10_000 })
     await expect(page.getByTestId('coaching-list').getByTestId('coaching-item')).toContainText(
       'voiceless',
     )

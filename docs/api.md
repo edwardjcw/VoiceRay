@@ -19,9 +19,31 @@ Implementation types live in `VoiceRay.Core` (`Contract.fs`). `POST /api/v1/refe
   "status": "ok",
   "product": "VoiceRay",
   "apiVersion": "v1",
-  "speechProvider": "Local"
+  "speechProvider": "Local",
+  "speech": {
+    "piperReady": true,
+    "piperStatus": "ready",
+    "canAutoProvision": true,
+    "whisperCacheAvailable": false
+  }
 }
 ```
+
+### `GET /api/v1/setup/status`
+
+Returns setup run state, rolling log lines, and per-resource status (`piper`, `whisper`, `vocalTract`, `mfa`).
+
+### `POST /api/v1/setup/run`
+
+Starts background setup for all auto-provisionable resources. Poll `GET /api/v1/setup/status` for progress.
+
+**Response** `202` when started; `200` when already ready; `409` when a run is already in progress.
+
+### `POST /api/v1/provision/speech`
+
+Legacy alias for `POST /api/v1/setup/run`.
+
+---
 
 ---
 
@@ -86,7 +108,7 @@ Generates reference TTS audio, IPA phoneme timeline, and articulatory keyframes 
 | Status | When |
 | ------ | ---- |
 | `400` | Missing/invalid `text` or `locale`; word not in demo lexicon (`en-US`) |
-| `503` | Piper TTS not provisioned or synthesis failed |
+| `503` | Speech engine not ready or synthesis failed (`code`: `speech_not_ready`) |
 
 ---
 
