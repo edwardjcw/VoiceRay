@@ -49,9 +49,15 @@ type AnalyzeService(alignmentOptions: AlignmentOptions, piperOptions: PiperOptio
                     let keyframes = PoseMap.keyframesForTimeline locale phonemes
                     let scores = AnalyzeScoring.scorePhonemes phonemes
 
+                    let baseMetadata =
+                        match inference.Source with
+                        | UserPhonemeInference.Wav2Vec2Recognized _ ->
+                            { OssAlignment.toMetadata alignment with AlignmentEngine = "wav2vec2" }
+                        | _ -> OssAlignment.toMetadata alignment
+
                     let metadata =
                         OssAlignment.withInference
-                            (OssAlignment.toMetadata alignment)
+                            baseMetadata
                             (Some(UserPhonemeInference.sourceLabel inference.Source))
                             (UserPhonemeInference.inferredWord inference.Source)
                             inference.Note

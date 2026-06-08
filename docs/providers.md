@@ -8,7 +8,8 @@
 | --------- | ----------------- | ----------- |
 | Piper CLI | `models/piper/bin/piper/piper.exe` | Required for reference TTS |
 | Piper en-US voice | `models/piper/voices/en_US-lessac-medium.onnx` | Required |
-| Whisper cache | `%USERPROFILE%\.cache\whisper\` | Reuse existing install |
+| Wav2Vec2 phoneme model | `models/wav2vec2/model_quantized.onnx` + `vocab.json` | **Default** recognition + alignment (auto-download) |
+| Whisper cache | `%USERPROFILE%\.cache\whisper\` | Fallback (reuse existing install) |
 | MFA worker | `workers/mfa/` Docker | Phase 4 stub (HTTP not wired in API yet) |
 | Azure Speech | — | **Deferred** |
 
@@ -53,7 +54,48 @@ $voice = "models\piper\voices\en_US-lessac-medium.onnx"
 
 **Phase 4:** add Piper voice paths per locale (see locale matrix in [`architecture.md`](architecture.md)).
 
-## Forced alignment (Whisper vs MFA)
+## Phoneme recognition + alignment (Wav2Vec2 ONNX) — default
+
+The analyze pipeline's default path runs an in-process wav2vec2 espeak phoneme model via
+[ONNX Runtime](https://onnxruntime.ai/) (`Microsoft.ML.OnnxRuntime`) — **no Python at runtime**.
+It performs greedy CTC decoding to recognize the phonemes the user actually produced and derives
+per-phoneme timestamps from the CTC frame spans, replacing the heuristic even-spread alignment,
+the Whisper whole-word lexicon match, and the DSP vowel probe.
+
+| Piece | Location |
+| ----- | -------- |
+| CTC decode + forced alignment (pure) | `VoiceRay.Core/Ctc.fs` |
+| Vocab parse + espeak→en-US IPA normalization | `VoiceRay.Infrastructure/Wav2Vec2Vocab.fs` |
+| ONNX session + recognition | `VoiceRay.Infrastructure/Wav2Vec2Phoneme.fs` |
+| Model download (idempotent) | `VoiceRay.Infrastructure/Wav2Vec2Provisioner.fs` |
+
+### Model
+
+- Source: [`onnx-community/wav2vec2-lv-60-espeak-cv-ft-ONNX`](https://huggingface.co/onnx-community/wav2vec2-lv-60-espeak-cv-ft-ONNX) (ONNX export of `facebook/wav2vec2-lv-60-espeak-cv-ft`, IPA output).
+- File: `onnx/model_quantized.onnx` (int8, ~318 MB — CPU-friendly) + `vocab.json`, pinned to commit `c69750f5043e5e1f8a71ab95dd3b98338c280c92`.
+- Destination: `models/wav2vec2/` (gitignored). Override the directory with `VOICERAY_WAV2VEC2_DIR`.
+- Input: 16 kHz mono float waveform, zero-mean/unit-variance (HF feature extractor). Frame stride ≈ 20 ms.
+
+### Provision
+
+The **Set up speech engine** flow (`POST /api/v1/setup/run`) downloads the model best-effort
+(optional resource `wav2vec2`). Readiness shows as `speech.wav2vec2Ready` in `GET /api/v1/health`.
+When the model is absent the pipeline transparently falls back to the Whisper/acoustic/G2P chain.
+
+### Configuration
+
+```json
+"Alignment": { "Provider": "Wav2Vec2" }
+```
+
+`Provider` accepts `Wav2Vec2` (default, alias `Phoneme`), `Whisper`, or `Mfa`. Analyze metadata reports
+`alignmentEngine: "wav2vec2"` and `phonemeInference: "wav2vec2"` when the model path is used.
+
+> **Accuracy note:** the int8 quantized model is the size/CPU default; swap in the full-precision
+> `onnx/model.onnx` for finer vowel discrimination. `Ctc.forcedAlign` is available to tighten
+> `/reference` (Piper TTS) keyframe timing in a follow-up.
+
+## Forced alignment (Whisper vs MFA) — fallback
 
 Analyze pipeline (`OssAlignment.fs`) selects an engine:
 

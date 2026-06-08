@@ -125,8 +125,29 @@ Per user question (`runtime: onnx`, `scope: rig_first`): this PR delivers the **
 - Suggested model: `facebook/wav2vec2-lv-60-espeak-cv-ft` (IPA output) exported to ONNX; map CTC frames → phoneme timestamps for both `/analyze` (user) and to tighten `/reference` timing.
 - Benefit: real per-phoneme timestamps drive accurate keyframe windows for the new rig and remove the demo-lexicon limitation.
 
+## 2026-06-08 — Wav2Vec2 phoneme recognition + alignment (ONNX) (`feature/wav2vec2-phoneme-onnx`)
+
+Delivers the Phase 2 follow-up: replaces the heuristic recognition/alignment stack with an in-process wav2vec2 espeak phoneme model (no Python at runtime).
+
+| Item | Status |
+| ---- | ------ |
+| Branch | `feature/wav2vec2-phoneme-onnx` |
+| Problem | Alignment was even-spread G2P; user phonemes came from a Whisper whole-word lexicon match + a DSP vowel guess — brittle and lexicon-bound |
+| Core algorithms | `VoiceRay.Core/Ctc.fs`: greedy CTC decode (collapse+blank-drop), CTC forced alignment (Viterbi over blank-extended target), frame→ms mapping — all pure + unit tested |
+| Vocab | `Wav2Vec2Vocab.fs`: parses `vocab.json`, blank/special detection, espeak→en-US IPA normalization (drops length/stress marks; ɐ→ə, ᵻ→ɪ, …) |
+| ONNX inference | `Wav2Vec2Phoneme.fs`: cached `InferenceSession` (Microsoft.ML.OnnxRuntime 1.26), zero-mean/unit-var feature prep, `OrtValue` run, greedy decode → timed `PhonemeSegment`s; graceful `Unavailable` reasons |
+| Provisioning | `Wav2Vec2Provisioner.fs`: downloads `model_quantized.onnx` (~318 MB) + `vocab.json` from `onnx-community/wav2vec2-lv-60-espeak-cv-ft-ONNX` (pinned commit) to `models/wav2vec2/` (gitignored) |
+| Provider wiring | `AlignmentProvider.Wav2Vec2` (+`Phoneme` alias); `appsettings.json` default `Provider=Wav2Vec2`; `OssAlignment` keeps whisper-stub baseline naming |
+| Analyze path | `UserPhonemeInference.infer` prefers wav2vec2 recognition when provisioned, else falls back to the legacy Whisper/acoustic/G2P chain; `AnalyzeService` sets `alignmentEngine=wav2vec2` |
+| Setup/health | `wav2vec2` resource in `SetupProvisioner` (optional, auto-provisionable) + `wav2vec2Ready` in `SpeechCapabilities`; warm-up at startup in `Program.fs` |
+| Tests | Core: 10 CTC + 4 vocab. Api: fallback test (model absent) + gated real-recognition test (model present). Frontend mock + real-API integration made engine/acoustic-agnostic |
+| Verification | Provisioned the real model in-session; backend gated test recognizes the pit fixture acoustically as `[p,e,t]` (front vowel, not the prompted /æ/) via `alignmentEngine=wav2vec2`; 3 real-API Playwright integration tests pass against the live model |
+| Post-work gates | `dotnet test` (Core 41 + Api 19) green; `npm run test` (14 unit + 4 mock e2e + 3 integration) green; `dotnet build` / `npm run build` clean |
+| Remaining | `/reference` still uses even-spread timing — `Ctc.forcedAlign` is ready to tighten it (next). Full-precision model can replace int8 `model_quantized.onnx` for finer vowel accuracy |
+
 ## Agent notes
 
 - Final PR per user policy; no per-ticket PRs.
 - Phase 4 follow-ups (optional): locale packs, PWA manifest, live MFA HTTP client.
-- Phase 2 follow-up: Wav2Vec2 phoneme alignment via ONNX (see 2026-06-08 entry).
+- Phase 2 follow-up: Wav2Vec2 phoneme alignment via ONNX — **delivered** (see 2026-06-08 Wav2Vec2 entry).
+- Next (optional): wire `Ctc.forcedAlign` into `/reference` for acoustically-tightened reference keyframes.

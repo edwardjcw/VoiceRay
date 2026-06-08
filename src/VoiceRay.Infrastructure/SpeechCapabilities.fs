@@ -13,6 +13,8 @@ type SpeechCapabilities =
       CanAutoProvision: bool
       [<JsonPropertyName("whisperCacheAvailable")>]
       WhisperCacheAvailable: bool
+      [<JsonPropertyName("wav2vec2Ready")>]
+      Wav2Vec2Ready: bool
       [<JsonPropertyName("vocalTractReady")>]
       VocalTractReady: bool
       [<JsonPropertyName("allRequiredReady")>]
@@ -28,6 +30,7 @@ module SpeechCapabilities =
           PiperStatus = PiperProvisioner.statusMessage piper
           CanAutoProvision = System.OperatingSystem.IsWindows()
           WhisperCacheAvailable = WhisperProvisioner.isReady alignment
+          Wav2Vec2Ready = Wav2Vec2Provisioner.isReady contentRoot
           VocalTractReady = VocalTractProvisioner.isReady contentRoot
           AllRequiredReady = SetupProvisioner.allRequiredReady contentRoot piper alignment
           SetupState = snap.state }

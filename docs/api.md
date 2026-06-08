@@ -24,14 +24,20 @@ Implementation types live in `VoiceRay.Core` (`Contract.fs`). `POST /api/v1/refe
     "piperReady": true,
     "piperStatus": "ready",
     "canAutoProvision": true,
-    "whisperCacheAvailable": false
+    "whisperCacheAvailable": false,
+    "wav2vec2Ready": true,
+    "vocalTractReady": true,
+    "allRequiredReady": true,
+    "setupState": "succeeded"
   }
 }
 ```
 
+`wav2vec2Ready` indicates the in-process phoneme model (ONNX) is provisioned; when true, `/analyze` uses it for recognition + alignment.
+
 ### `GET /api/v1/setup/status`
 
-Returns setup run state, rolling log lines, and per-resource status (`piper`, `whisper`, `vocalTract`, `mfa`).
+Returns setup run state, rolling log lines, and per-resource status (`piper`, `wav2vec2`, `whisper`, `vocalTract`, `mfa`).
 
 ### `POST /api/v1/setup/run`
 
@@ -146,11 +152,19 @@ Aligns user WAV to reference text; returns user phoneme timeline, keyframes, and
 
 | Field | Type | Description |
 | ----- | ---- | ----------- |
-| `alignmentEngine` | string | `whisper-stub` or `mfa-stub` (OSS forced-alignment path) |
+| `alignmentEngine` | string | `wav2vec2`, `whisper-stub`, or `mfa-stub` (recognition/alignment path used) |
 | `computeDevice` | string | `cpu` or `cuda` |
 | `deviceBanner` | string | Human-readable banner (CPU fallback vs CUDA) |
 | `sampleRateHz` | number | Always `16000` after normalize |
 | `channels` | number | Always `1` after normalize |
+| `phonemeInference` | string? | Source label: `wav2vec2`, `whisper:<word>`, `acoustic-vowel`, or `text-g2p` |
+| `inferredWord` | string? | Demo word the Whisper fallback heard (only on the `whisper:*` path) |
+| `inferenceNote` | string? | Human-readable note (e.g. `wav2vec2 heard: pɪt`, or fallback reason) |
+
+When the `Wav2Vec2` model is provisioned (default provider), `/analyze` runs in-process CTC
+phoneme recognition + alignment and sets `alignmentEngine: "wav2vec2"` /
+`phonemeInference: "wav2vec2"`. If the model is absent, it transparently falls back to the
+Whisper word-match / acoustic-vowel / G2P chain.
 
 ```json
 {
@@ -159,11 +173,13 @@ Aligns user WAV to reference text; returns user phoneme timeline, keyframes, and
   "scores": [{ "ipa": "p", "score": 92.5, "accuracy": "good" }],
   "audioEcho": null,
   "metadata": {
-    "alignmentEngine": "whisper-stub",
+    "alignmentEngine": "wav2vec2",
     "computeDevice": "cpu",
     "deviceBanner": "Alignment running on CPU — enable CUDA for GPU acceleration (VOICERAY_FORCE_CPU unset).",
     "sampleRateHz": 16000,
-    "channels": 1
+    "channels": 1,
+    "phonemeInference": "wav2vec2",
+    "inferenceNote": "wav2vec2 heard: pɪt"
   }
 }
 ```

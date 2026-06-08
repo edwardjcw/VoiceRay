@@ -37,6 +37,8 @@ let main args =
     Task.Run(fun () -> WhisperTranscriber.warmUp repoRoot alignmentOptions)
     |> ignore
 
+    Task.Run(fun () -> Wav2Vec2Phoneme.warmUp repoRoot) |> ignore
+
     let speechProvider =
         builder.Configuration.["Speech:Provider"]
         |> Option.ofObj

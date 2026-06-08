@@ -54,7 +54,8 @@ export async function installMockApi(page) {
     logs: [{ at: new Date().toISOString(), message: 'All required resources are ready.', level: 'info' }],
     resources: [
       { id: 'piper', label: 'Piper TTS', status: 'ready', detail: 'ready', required: true, canAutoProvision: true },
-      { id: 'whisper', label: 'Whisper', status: 'ready', detail: '', required: false, canAutoProvision: true },
+      { id: 'wav2vec2', label: 'Wav2Vec2 phoneme model', status: 'ready', detail: '', required: false, canAutoProvision: true },
+      { id: 'whisper', label: 'Whisper (fallback)', status: 'ready', detail: '', required: false, canAutoProvision: true },
       { id: 'vocalTract', label: 'Sagittal', status: 'ready', detail: '', required: true, canAutoProvision: true },
       { id: 'mfa', label: 'MFA', status: 'optional', detail: '', required: false, canAutoProvision: false },
     ],
@@ -89,6 +90,7 @@ export async function installMockApi(page) {
           piperStatus: 'ready',
           canAutoProvision: true,
           whisperCacheAvailable: true,
+          wav2vec2Ready: true,
           vocalTractReady: true,
           allRequiredReady: true,
           setupState: 'succeeded',
@@ -120,12 +122,14 @@ export async function installMockApi(page) {
         scores: [{ ipa: 'p', score: 90, accuracy: 'good' }],
         audioEcho: SILENT_WAV_BASE64,
         metadata: {
-          alignmentEngine: 'whisper-stub',
+          alignmentEngine: 'wav2vec2',
           computeDevice: 'cpu',
           deviceBanner:
             'Alignment running on CPU — enable CUDA for GPU acceleration (VOICERAY_FORCE_CPU unset).',
           sampleRateHz: 16000,
           channels: 1,
+          phonemeInference: 'wav2vec2',
+          inferenceNote: 'wav2vec2 heard: pæd',
         },
       }),
     })
