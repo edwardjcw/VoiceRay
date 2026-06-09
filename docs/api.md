@@ -63,15 +63,21 @@ Generates reference TTS audio, IPA phoneme timeline, and articulatory keyframes 
 
 | Field | Type | Required | Description |
 | ----- | ---- | -------- | ----------- |
-| `text` | string | yes | Word or phrase to synthesize |
-| `locale` | string | yes | BCP-47 tag (e.g. `en-US`) |
+| `text` | string | yes | Any word to synthesize (free-typed; not limited to the demo lexicon) |
+| `locale` | string | yes | BCP-47 tag — `en-US` or `fr-FR` (selects the Piper voice) |
 
 ```json
 {
-  "text": "pat",
-  "locale": "en-US"
+  "text": "chat",
+  "locale": "fr-FR"
 }
 ```
+
+**Word source:** demo-lexicon words (`en-US`) use an exact CMU-style G2P. **Any other typed
+word — in any supported locale — is synthesized with the locale's Piper voice and the phonemes
+are recognized acoustically from that audio with the wav2vec2 espeak model.** This removes the
+demo-lexicon limitation at the cost of requiring the phoneme model to be provisioned for
+free-typed words (`fr-FR` French voice is downloaded on first use).
 
 **Response** `200 application/json`
 
@@ -126,8 +132,9 @@ even-spread G2P timeline — the response shape is identical either way.
 
 | Status | When |
 | ------ | ---- |
-| `400` | Missing/invalid `text` or `locale`; word not in demo lexicon (`en-US`) |
+| `400` | Missing/invalid `text` or `locale` |
 | `503` | Speech engine not ready or synthesis failed (`code`: `speech_not_ready`) |
+| `503` | Free-typed word needs phoneme recognition but the model is not provisioned (`code`: `recognition_not_ready`) |
 
 ---
 
@@ -249,7 +256,11 @@ Diffs reference vs user phoneme sequences and returns alignment segments plus co
 
 | Status | When |
 | ------ | ---- |
-| `400` | Empty phoneme lists, missing locale, or unsupported locale (MVP: `en-US` only) |
+| `400` | Empty phoneme lists or missing locale |
+
+> Compare accepts any locale. The greedy IPA diff is language-agnostic; rule-based coaching
+> copy is currently authored for `en-US`, so other locales return diff segments with generic
+> (or no) coaching text.
 
 ---
 

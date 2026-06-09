@@ -6,17 +6,27 @@ open System.IO.Compression
 open System.Net.Http
 open System.Threading
 
-/// Downloads Piper CLI and en-US voice when missing (Windows amd64; see `scripts/provision-piper.ps1`).
+/// Downloads Piper CLI and per-locale voices when missing (Windows amd64; see
+/// `scripts/provision-piper.ps1`). Voices are pulled from rhasspy/piper-voices.
 module PiperProvisioner =
     let private provisionLock = obj ()
     let private http = new HttpClient()
 
     let private releaseTag = "2023.11.14-2"
 
-    let private voiceBase =
-        "https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0/en/en_US/lessac/medium"
+    let private voicesRoot =
+        "https://huggingface.co/rhasspy/piper-voices/resolve/v1.0.0"
+
+    /// HuggingFace sub-path for each locale's voice directory (relative to `voicesRoot`).
+    let private voiceSubPaths =
+        Map.ofList
+            [ "en-US", "en/en_US/lessac/medium"
+              "fr-FR", "fr/fr_FR/siwis/medium" ]
 
     let isReady (options: PiperOptions) = PiperOptions.isConfigured options
+
+    let isReadyForLocale (options: PiperOptions) (locale: string) =
+        PiperOptions.isVoiceReady options locale
 
     let private downloadFile (label: string) (url: string) (destination: string) =
         ProvisionLog.info $"{label}…"
@@ -58,26 +68,33 @@ module PiperProvisioner =
             if not (File.Exists options.Executable) then
                 failwith "Piper executable missing after download."
 
-    let private ensureVoiceModel (options: PiperOptions) =
-        let voiceDir = Path.GetDirectoryName options.VoiceModel
+    /// Downloads the ONNX voice + its `.json` config for `locale` when missing.
+    let private ensureVoiceModelFor (options: PiperOptions) (locale: string) =
+        let voicePath = PiperOptions.resolveVoice options locale
+        let voiceDir = Path.GetDirectoryName voicePath
 
         if String.IsNullOrEmpty voiceDir then
             failwith "Invalid Piper voice model path."
 
         Directory.CreateDirectory voiceDir |> ignore
 
-        let onnxName = Path.GetFileName options.VoiceModel
+        let onnxName = Path.GetFileName voicePath
         let jsonName = $"{onnxName}.json"
 
-        if not (File.Exists options.VoiceModel) then
-            downloadFile $"Downloading voice model {onnxName}" $"{voiceBase}/{onnxName}" options.VoiceModel
+        match voiceSubPaths.TryFind locale with
+        | None -> failwith $"No Piper voice is configured for locale '{locale}'."
+        | Some subPath ->
+            let voiceBase = $"{voicesRoot}/{subPath}"
 
-        let jsonPath = Path.Combine(voiceDir, jsonName)
+            if not (File.Exists voicePath) then
+                downloadFile $"Downloading {locale} voice {onnxName}" $"{voiceBase}/{onnxName}" voicePath
 
-        if not (File.Exists jsonPath) then
-            downloadFile $"Downloading voice config {jsonName}" $"{voiceBase}/{jsonName}" jsonPath
+            let jsonPath = Path.Combine(voiceDir, jsonName)
 
-    /// Idempotent Piper setup under configured paths. Returns `Ok` when ready.
+            if not (File.Exists jsonPath) then
+                downloadFile $"Downloading {locale} voice config {jsonName}" $"{voiceBase}/{jsonName}" jsonPath
+
+    /// Idempotent Piper setup (binary + default en-US voice). Returns `Ok` when ready.
     let tryProvision (options: PiperOptions) =
         if isReady options then
             Ok()
@@ -88,12 +105,32 @@ module PiperProvisioner =
                 else
                     try
                         ensurePiperBinary options
-                        ensureVoiceModel options
+                        ensureVoiceModelFor options PiperOptions.defaultLocale
 
                         if isReady options then
                             Ok()
                         else
                             Error "Piper files are still missing after provisioning."
+                    with ex ->
+                        Error ex.Message)
+
+    /// Idempotent setup of the Piper binary + the voice for a specific locale.
+    let tryProvisionLocale (options: PiperOptions) (locale: string) =
+        if isReadyForLocale options locale then
+            Ok()
+        else
+            lock provisionLock (fun () ->
+                if isReadyForLocale options locale then
+                    Ok()
+                else
+                    try
+                        ensurePiperBinary options
+                        ensureVoiceModelFor options locale
+
+                        if isReadyForLocale options locale then
+                            Ok()
+                        else
+                            Error $"Piper voice for '{locale}' is still missing after provisioning."
                     with ex ->
                         Error ex.Message)
 

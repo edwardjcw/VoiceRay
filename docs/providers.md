@@ -8,6 +8,7 @@
 | --------- | ----------------- | ----------- |
 | Piper CLI | `models/piper/bin/piper/piper.exe` | Required for reference TTS |
 | Piper en-US voice | `models/piper/voices/en_US-lessac-medium.onnx` | Required |
+| Piper fr-FR voice | `models/piper/voices/fr_FR-siwis-medium.onnx` | Downloaded on first `fr-FR` reference |
 | Wav2Vec2 phoneme model | `models/wav2vec2/<variant>.onnx` + `vocab.json` | **Default** recognition + alignment (auto-download; variant configurable) |
 | Whisper cache | `%USERPROFILE%\.cache\whisper\` | Fallback (reuse existing install) |
 | MFA worker | `workers/mfa/` Docker | Phase 4 stub (HTTP not wired in API yet) |
@@ -52,7 +53,30 @@ $voice = "models\piper\voices\en_US-lessac-medium.onnx"
 }
 ```
 
-**Phase 4:** add Piper voice paths per locale (see locale matrix in [`architecture.md`](architecture.md)).
+### Multilingual voices (typed words)
+
+`PiperOptions.Voices` maps a locale onto its own ONNX voice. Built-in voices:
+
+| Locale | Voice | Source path on `rhasspy/piper-voices` |
+| ------ | ----- | -------------------------------------- |
+| `en-US` | `en_US-lessac-medium` | `en/en_US/lessac/medium` |
+| `fr-FR` | `fr_FR-siwis-medium` | `fr/fr_FR/siwis/medium` |
+
+`PiperProvisioner.tryProvisionLocale` downloads the binary + the requested locale's voice on
+demand (the French voice is fetched the first time an `fr-FR` reference is requested on Windows).
+Override per-locale voice paths via config:
+
+```jsonc
+"Speech": { "Piper": { "Voices": { "fr-FR": "models/piper/voices/fr_FR-siwis-medium.onnx" } } }
+```
+
+**Typed-word phonemes:** only demo-lexicon `en-US` words use a dictionary G2P. Any other typed
+word (including all French words) is synthesized with the locale voice and the phonemes are
+recognized acoustically from that audio by the wav2vec2 espeak model — so free-typed practice
+requires the wav2vec2 model to be provisioned. The fp32 `model` variant is the best general
+multilingual espeak phoneme model available pre-built as ONNX; a French-specific phonemizer
+(e.g. `Cnam-LMSSC/wav2vec2-french-phonemizer-v2`) would need a separate ONNX export step and is
+deferred (would break the no-Python-at-runtime design).
 
 ## Phoneme recognition + alignment (Wav2Vec2 ONNX) — default
 

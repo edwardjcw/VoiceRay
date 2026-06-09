@@ -61,4 +61,44 @@ test.describe('VoiceRay practice / record / compare flows', () => {
       await expect(page.getByTestId(id)).toHaveClass(/is-active/)
     }
   })
+
+  test('typing a word and switching language updates the session', async ({ page }) => {
+    const wordInput = page.getByTestId('word-input')
+    await expect(wordInput).toHaveValue('pat')
+
+    // Free-typed word.
+    await wordInput.fill('banana')
+    await wordInput.press('Enter')
+    await expect(page.getByTestId('status-line')).toContainText('banana')
+
+    // Switching language swaps in a sensible default word for that locale.
+    await page.getByTestId('lang-select').selectOption('fr-FR')
+    await expect(wordInput).toHaveValue('chat')
+    await expect(page.getByTestId('status-line')).toContainText('fr-FR')
+  })
+
+  test('spectrogram toggle reveals side-by-side spectrograms in compare', async ({ page }) => {
+    await page.getByTestId('load-reference').click()
+    await page.getByTestId('step-record').click()
+    await page.getByTestId('record-start').click()
+    await page.getByTestId('record-stop').click()
+    await page.getByTestId('analyze-submit').click()
+
+    await page.getByTestId('step-compare').click()
+
+    const panel = page.getByTestId('compare-spectrograms')
+    await expect(panel).toBeHidden()
+
+    const toggle = page.getByTestId('toggle-spectrogram')
+    await expect(toggle).toHaveText('Show spectrogram')
+    await toggle.click()
+
+    await expect(panel).toBeVisible()
+    await expect(toggle).toHaveText('Hide spectrogram')
+    await expect(page.getByTestId('spectrogram-reference')).toBeVisible()
+    await expect(page.getByTestId('spectrogram-user')).toBeVisible()
+
+    await toggle.click()
+    await expect(panel).toBeHidden()
+  })
 })

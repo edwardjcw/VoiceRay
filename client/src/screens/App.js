@@ -12,8 +12,13 @@ import { mountSagittalPlayer, mountComparePlayers, poseAtTime } from '../animati
 import { KeyframeSync } from '../audio/syncPlayback.js'
 import { startRecording } from '../audio/recorder.js'
 import { session, updateSession, clearAnalyzeAndCompare } from '../state/session.js'
-import { DEMO_WORDS } from '../constants/demoWords.js'
+import {
+  LOCALES,
+  suggestionsForLocale,
+  defaultWordForLocale,
+} from '../constants/demoWords.js'
 import { renderPhonemeStrip, renderComparePhonemeStrip } from '../ui/phonemeStrip.js'
+import { renderSpectrogramFromSrc } from '../audio/spectrogram.js'
 
 /** @type {'practice' | 'record' | 'compare'} */
 let activeStep = 'practice'
@@ -44,10 +49,6 @@ export async function renderApp(mount) {
 }
 
 function buildShell() {
-  const wordOptions = DEMO_WORDS.map(
-    (w) => `<option value="${w}"${w === session.text ? ' selected' : ''}>${w}</option>`,
-  ).join('')
-
   return `
     <main class="voiceray-app">
       <header class="app-header">
@@ -68,9 +69,20 @@ function buildShell() {
       </section>
 
       <section class="word-bar">
-        <label for="word-select">Word</label>
-        <select id="word-select" data-testid="word-select">${wordOptions}</select>
-        <span class="locale-tag">en-US</span>
+        <label for="word-input">Word</label>
+        <input
+          type="text"
+          id="word-input"
+          data-testid="word-input"
+          list="word-suggestions"
+          autocomplete="off"
+          spellcheck="false"
+          placeholder="Type a word…"
+          value="${escapeHtml(session.text ?? '')}"
+        />
+        <datalist id="word-suggestions">${suggestionOptionsHtml(session.locale)}</datalist>
+        <label for="lang-select" class="sr-only">Language</label>
+        <select id="lang-select" data-testid="lang-select">${localeOptionsHtml(session.locale)}</select>
       </section>
 
       <nav class="step-nav" aria-label="Practice flow">
@@ -86,6 +98,25 @@ function buildShell() {
 }
 
 /**
+ * @param {string} locale
+ */
+function suggestionOptionsHtml(locale) {
+  return suggestionsForLocale(locale)
+    .map((w) => `<option value="${escapeHtml(w)}"></option>`)
+    .join('')
+}
+
+/**
+ * @param {string} locale
+ */
+function localeOptionsHtml(locale) {
+  return LOCALES.map(
+    (l) =>
+      `<option value="${l.code}"${l.code === locale ? ' selected' : ''}>${escapeHtml(l.label)}</option>`,
+  ).join('')
+}
+
+/**
  * @param {HTMLElement} mount
  */
 function wireShell(mount) {
@@ -93,11 +124,36 @@ function wireShell(mount) {
     await runResourceSetup(mount, { userInitiated: true })
   })
 
-  const wordSelect = mount.querySelector('#word-select')
-  wordSelect?.addEventListener('change', async () => {
-    updateSession({ text: wordSelect.value, reference: null })
+  const wordInput = mount.querySelector('#word-input')
+  const applyWord = async () => {
+    if (!(wordInput instanceof HTMLInputElement)) return
+    const value = wordInput.value.trim()
+    if (!value || value === session.text) return
+    updateSession({ text: value, reference: null })
     clearAnalyzeAndCompare()
     setStatus(mount, `Word set to "${session.text}". Load reference again.`)
+    await showStep(mount, activeStep)
+  }
+  wordInput?.addEventListener('change', applyWord)
+  wordInput?.addEventListener('keydown', (e) => {
+    if (e instanceof KeyboardEvent && e.key === 'Enter') {
+      e.preventDefault()
+      applyWord()
+    }
+  })
+
+  const langSelect = mount.querySelector('#lang-select')
+  langSelect?.addEventListener('change', async () => {
+    if (!(langSelect instanceof HTMLSelectElement)) return
+    const locale = langSelect.value
+    const nextWord = defaultWordForLocale(locale) || session.text
+    updateSession({ locale, text: nextWord, reference: null })
+    clearAnalyzeAndCompare()
+    const datalist = mount.querySelector('#word-suggestions')
+    if (datalist) datalist.innerHTML = suggestionOptionsHtml(locale)
+    const input = mount.querySelector('#word-input')
+    if (input instanceof HTMLInputElement) input.value = session.text
+    setStatus(mount, `Language set to ${locale}. Load reference again.`)
     await showStep(mount, activeStep)
   })
 
@@ -212,6 +268,21 @@ function comparePanelHtml() {
       </div>
       <div id="compare-phonemes" class="phoneme-strip" data-testid="compare-phonemes"></div>
       <div id="compare-sagittal" class="sagittal-view compare-view" data-testid="compare-sagittal"></div>
+      <div class="spectrogram-controls">
+        <button type="button" id="btn-toggle-spectrogram" class="btn-secondary" data-testid="toggle-spectrogram" aria-pressed="false">
+          Show spectrogram
+        </button>
+      </div>
+      <div id="compare-spectrograms" class="spectrograms" data-testid="compare-spectrograms" hidden>
+        <figure class="spectrogram">
+          <figcaption>Reference</figcaption>
+          <canvas id="spectrogram-reference" class="spectrogram-canvas" width="320" height="160" data-testid="spectrogram-reference"></canvas>
+        </figure>
+        <figure class="spectrogram">
+          <figcaption>Your recording</figcaption>
+          <canvas id="spectrogram-user" class="spectrogram-canvas" width="320" height="160" data-testid="spectrogram-user"></canvas>
+        </figure>
+      </div>
       <ul id="coaching-list" class="coaching-list" data-testid="coaching-list">${coachingHtml}</ul>
       <audio id="compare-audio" class="sr-audio" data-testid="compare-audio"></audio>
     </section>
@@ -404,6 +475,69 @@ function refreshComparePanel(mount) {
   }
 }
 
+/** Tracks whether spectrograms have been rendered for the current compare data. */
+let spectrogramsRendered = false
+
+/**
+ * Wires the "Show spectrogram" toggle. Spectrograms are computed lazily the first
+ * time they're shown (decode + STFT can be a few hundred ms).
+ * @param {HTMLElement} mount
+ */
+function wireSpectrogramToggle(mount) {
+  const btn = mount.querySelector('#btn-toggle-spectrogram')
+  const panel = mount.querySelector('#compare-spectrograms')
+  if (!btn || !panel) return
+  spectrogramsRendered = false
+
+  if (btn.dataset.wired === 'true') return
+  btn.dataset.wired = 'true'
+
+  btn.addEventListener('click', async () => {
+    const willShow = panel.hidden
+    panel.hidden = !willShow
+    btn.setAttribute('aria-pressed', String(willShow))
+    btn.textContent = willShow ? 'Hide spectrogram' : 'Show spectrogram'
+
+    if (willShow && !spectrogramsRendered) {
+      await renderCompareSpectrograms(mount)
+    }
+  })
+}
+
+/**
+ * @param {HTMLElement} mount
+ */
+async function renderCompareSpectrograms(mount) {
+  const refCanvas = mount.querySelector('#spectrogram-reference')
+  const userCanvas = mount.querySelector('#spectrogram-user')
+  const refSrc = audioSrcFromPayload(session.reference)
+  const userSrc = audioSrcFromPayload(session.analyze)
+
+  const jobs = []
+  if (refCanvas instanceof HTMLCanvasElement && refSrc) {
+    jobs.push(
+      renderSpectrogramFromSrc(refCanvas, refSrc).catch((err) => {
+        setStatus(mount, `Reference spectrogram failed: ${err instanceof Error ? err.message : err}`)
+      }),
+    )
+  }
+  if (userCanvas instanceof HTMLCanvasElement && userSrc) {
+    jobs.push(
+      renderSpectrogramFromSrc(userCanvas, userSrc).catch((err) => {
+        setStatus(mount, `Recording spectrogram failed: ${err instanceof Error ? err.message : err}`)
+      }),
+    )
+  }
+
+  if (!jobs.length) {
+    setStatus(mount, 'No audio available for spectrograms — load a reference and analyze a recording.')
+    return
+  }
+
+  await Promise.all(jobs)
+  spectrogramsRendered = true
+}
+
 async function initComparePanel(mount) {
   const container = mount.querySelector('#compare-sagittal')
   if (container) {
@@ -413,6 +547,7 @@ async function initComparePanel(mount) {
   }
 
   refreshComparePanel(mount)
+  wireSpectrogramToggle(mount)
 
   const runBtn = mount.querySelector('#btn-run-compare')
   if (runBtn?.dataset.wired !== 'true') {

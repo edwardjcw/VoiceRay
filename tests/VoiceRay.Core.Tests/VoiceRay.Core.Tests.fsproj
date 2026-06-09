@@ -11,6 +11,8 @@
     <Compile Include="ReferencePipelineTests.fs" />
     <Compile Include="CtcTests.fs" />
     <Compile Include="Wav2Vec2VocabTests.fs" />
+    <Compile Include="PoseMapTests.fs" />
+    <Compile Include="PiperOptionsTests.fs" />
     <Compile Include="PhonemeDiffTests.fs" />
     <Compile Include="ComparePipelineTests.fs" />
     <Compile Include="AnalyzePipelineTests.fs" />
