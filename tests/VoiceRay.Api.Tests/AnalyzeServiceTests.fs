@@ -12,7 +12,8 @@ let private repoRoot () =
 let private alignmentOptions () =
     { Provider = AlignmentProvider.Whisper
       WhisperCacheDir = Some(Path.Combine(repoRoot (), "models", "whisper"))
-      MfaWorkerUrl = None }
+      MfaWorkerUrl = None
+      Wav2Vec2Variant = Wav2Vec2Provisioner.defaultVariant }
 
 /// Synthetic sine-wave clips are not valid Whisper input; keep these on acoustic inference only.
 let private acousticOnlyAlignmentOptions () =

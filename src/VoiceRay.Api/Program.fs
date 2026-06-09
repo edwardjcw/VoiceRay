@@ -23,9 +23,14 @@ let main args =
     let repoRoot = RepoPaths.resolveRepoRoot builder.Environment.ContentRootPath
     let piperOptions = PiperOptions.load builder.Configuration repoRoot
     let alignmentOptions = AlignmentOptions.load builder.Configuration repoRoot
+    // Make the configured wav2vec2 precision variant the process default (env still overrides)
+    // so provisioning/readiness/model-path resolution all agree on one filename.
+    Wav2Vec2Provisioner.setDefaultVariant alignmentOptions.Wav2Vec2Variant
     builder.Services.AddSingleton(piperOptions) |> ignore
     builder.Services.AddSingleton(alignmentOptions) |> ignore
-    builder.Services.AddSingleton<ReferenceService>() |> ignore
+    builder.Services.AddSingleton<ReferenceService>(fun _ ->
+        ReferenceService(piperOptions, alignmentOptions, repoRoot))
+    |> ignore
     builder.Services.AddSingleton<AnalyzeService>(fun (sp: IServiceProvider) ->
         let env = sp.GetService(typeof<Microsoft.AspNetCore.Hosting.IWebHostEnvironment>) :?> Microsoft.AspNetCore.Hosting.IWebHostEnvironment
         AnalyzeService(alignmentOptions, piperOptions, RepoPaths.resolveRepoRoot env.ContentRootPath))

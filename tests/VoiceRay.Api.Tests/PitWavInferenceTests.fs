@@ -17,7 +17,8 @@ let private pitFixturePath () =
 let private alignmentOptions () =
     { Provider = AlignmentProvider.Whisper
       WhisperCacheDir = Some(whisperCacheDir ())
-      MfaWorkerUrl = None }
+      MfaWorkerUrl = None
+      Wav2Vec2Variant = Wav2Vec2Provisioner.defaultVariant }
 
 let private piperOptions () =
     let root = repoRoot ()

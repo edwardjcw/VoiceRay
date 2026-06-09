@@ -145,9 +145,37 @@ Delivers the Phase 2 follow-up: replaces the heuristic recognition/alignment sta
 | Post-work gates | `dotnet test` (Core 41 + Api 19) green; `npm run test` (14 unit + 4 mock e2e + 3 integration) green; `dotnet build` / `npm run build` clean |
 | Remaining | `/reference` still uses even-spread timing — `Ctc.forcedAlign` is ready to tighten it (next). Full-precision model can replace int8 `model_quantized.onnx` for finer vowel accuracy |
 
+## 2026-06-09 — Reference CTC forced alignment + configurable model variant (`feature/wav2vec2-reference-alignment`)
+
+Tightens `/reference` timing with CTC forced alignment and makes the wav2vec2 precision variant configurable.
+
+| Item | Status |
+| ---- | ------ |
+| Branch | `feature/wav2vec2-reference-alignment` |
+| Task 1 — reference timing | `Wav2Vec2Phoneme.tryForcedAlign repoRoot wav targetIpa`: normalizes the Piper WAV → 16 kHz mono, maps each en-US target IPA back to a model token (reverse of `normalizeIpa`: exact vocab token, else lowest-id token whose `normalizeIpa` matches), runs logits, `Ctc.forcedAlign`, `Ctc.spanToMs`, keeping the original target IPA on the segments |
+| Reference wiring | `ReferenceService` now takes `(PiperOptions, AlignmentOptions, repoRoot)`; when `Provider=Wav2Vec2` and the model is ready it forced-aligns the G2P IPA against the Piper audio and builds keyframes from the aligned phonemes; **any** failure (model absent / unmapped symbol / infeasible) transparently falls back to even-spread `ReferencePipeline.buildSession`. DI updated in `Program.fs` (mirrors `AnalyzeService`) |
+| Task 2 — model variant | `Wav2Vec2Provisioner` is variant-aware (`model` fp32 / `model_fp16` / `model_quantized` int8). Variant resolves env `VOICERAY_WAV2VEC2_VARIANT` > config `Speech:Alignment:Wav2Vec2:ModelVariant` > built-in default; the chosen variant drives both download filename and load path. **Default raised to `model` (full fp32).** Plumbed through `AlignmentOptions.Wav2Vec2Variant`; `Program.fs` calls `Wav2Vec2Provisioner.setDefaultVariant` at startup |
+| fsproj order | Moved `ProvisionLog`/`Wav2Vec2Provisioner` before `AlignmentOptions`, and `ReferenceService` after `Wav2Vec2Phoneme` (F# compile-order) |
+| Tests | `ReferenceServiceTests`: gated forced-alignment test (non-even-spread, ordered/in-range) + gated fallback test (Provider=Wav2Vec2, model absent → exact even-spread match). New `PitPetVowelTests`: gated pit/pet analyze + compare checks. All gated on `Wav2Vec2Phoneme.isReady` |
+| Verification (pit/pet) | Provisioned **all three variants locally** and ran the fixtures through analyze: |
+
+### Variant comparison on the minimal-pair fixtures (pinned commit `c69750f…`)
+
+| Variant | pit nucleus | pet nucleus | separates pair? | speed (CPU) | notes |
+| ------- | ----------- | ----------- | --------------- | ----------- | ----- |
+| `model` (fp32) | **/e/** | **/ɛ/** | ✅ (e ≠ ɛ ≠ æ) | ~fast | default |
+| `model_quantized` (int8) | /e/ | /ɛ/ | ✅ | ~fast | identical result to fp32 here |
+| `model_fp16` | /ɑ/ (degraded) | — | ❌ | **~6–10× slower** | CPU EP up-casts fp16→fp32; both slower and less accurate — **avoid on CPU** |
+
+**Finding (honest):** every usable variant resolves the speaker's lax **/ɪ/ in `pit` as /e/**, not /ɪ/ — i.e. the `/ɪ/→/e/` reading is **acoustic**, not a quantization artifact (it does not change between int8 and fp32). What the precision upgrade *does* guarantee for coaching holds: the two nuclei are **distinct** (`pit` /e/ ≠ `pet` /ɛ/) and **both differ from the prompted /æ/**, yielding `æ→e` (pit) and `æ→ɛ` (pet) substitutions vs the `pat` reference. The default is `model` (fp32) for maximum precision/headroom; `model_fp16` is explicitly **not** recommended on the CPU execution provider. Tests assert exactly what the model produces (`/e/` for pit), per the "acoustically honest" rule. |
+
+| Models | All variants live under `models/wav2vec2/` (gitignored); Piper provisioned under `models/piper/` |
+| Docs | `providers.md` (variant table + config + forced-alignment), `api.md` (reference timing note), this entry |
+
 ## Agent notes
 
 - Final PR per user policy; no per-ticket PRs.
 - Phase 4 follow-ups (optional): locale packs, PWA manifest, live MFA HTTP client.
 - Phase 2 follow-up: Wav2Vec2 phoneme alignment via ONNX — **delivered** (see 2026-06-08 Wav2Vec2 entry).
-- Next (optional): wire `Ctc.forcedAlign` into `/reference` for acoustically-tightened reference keyframes.
+- `/reference` acoustically-tightened via `Ctc.forcedAlign` — **delivered** (see 2026-06-09 entry).
+- `model_fp16` is slower + less accurate on the CPU EP; prefer `model` (fp32) or `model_quantized` (int8).
