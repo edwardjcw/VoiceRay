@@ -12,7 +12,9 @@ type AlignmentProvider =
 type AlignmentOptions =
     { Provider: AlignmentProvider
       WhisperCacheDir: string option
-      MfaWorkerUrl: string option }
+      MfaWorkerUrl: string option
+      /// wav2vec2 ONNX precision variant ("model" = fp32, "model_fp16", "model_quantized").
+      Wav2Vec2Variant: string }
 
 module AlignmentOptions =
     let sectionName = "Speech:Alignment"
@@ -46,9 +48,21 @@ module AlignmentOptions =
             |> Option.ofObj
             |> Option.filter (not << System.String.IsNullOrWhiteSpace)
 
+        // wav2vec2 precision variant: env override wins, then config, then built-in default.
+        let wav2vec2Variant =
+            match System.Environment.GetEnvironmentVariable "VOICERAY_WAV2VEC2_VARIANT" with
+            | null
+            | "" ->
+                section.GetSection("Wav2Vec2").["ModelVariant"]
+                |> Option.ofObj
+                |> Option.filter (not << System.String.IsNullOrWhiteSpace)
+                |> Option.defaultValue Wav2Vec2Provisioner.defaultVariant
+            | env -> env
+
         { Provider = provider
           WhisperCacheDir = cacheDir
-          MfaWorkerUrl = mfaUrl }
+          MfaWorkerUrl = mfaUrl
+          Wav2Vec2Variant = wav2vec2Variant }
 
     let whisperCacheAvailable (options: AlignmentOptions) =
         match options.WhisperCacheDir with

@@ -24,10 +24,27 @@ module ReferenceMedia =
         with _ ->
             None
 
-type ReferenceService(options: PiperOptions) =
+/// Reference TTS + articulatory timeline. When the wav2vec2 model is provisioned and the
+/// alignment provider is `Wav2Vec2`, the known G2P IPA sequence is CTC forced-aligned against
+/// the synthesized Piper audio for real per-phoneme timing; otherwise it falls back to the
+/// even-spread `ReferencePipeline.buildSession`.
+type ReferenceService(options: PiperOptions, alignmentOptions: AlignmentOptions, repoRoot: string) =
     member _.Options = options
 
-    member _.Generate(request: ReferenceRequest) =
+    member private _.BuildSession (locale: Locale) (g2p: G2pStub.G2pResult) (wavBytes: byte[]) (durationMs: int) =
+        let fallback () = ReferencePipeline.buildSession locale g2p durationMs
+
+        match alignmentOptions.Provider with
+        | AlignmentProvider.Wav2Vec2 when Wav2Vec2Phoneme.isReady repoRoot ->
+            match Wav2Vec2Phoneme.tryForcedAlign repoRoot wavBytes g2p.IpaSymbols with
+            | Ok aligned when not (List.isEmpty aligned) ->
+                { ReferencePipeline.Phonemes = aligned
+                  ReferencePipeline.Keyframes = PoseMap.keyframesForTimeline locale aligned
+                  ReferencePipeline.IpaDisplay = g2p.IpaDisplay }
+            | _ -> fallback () // unmapped symbol / infeasible alignment / model error → even-spread
+        | _ -> fallback ()
+
+    member this.Generate(request: ReferenceRequest) =
         if String.IsNullOrWhiteSpace request.Text then
             Error(InvalidRequest "text is required")
         elif String.IsNullOrWhiteSpace request.Locale then
@@ -56,7 +73,7 @@ type ReferenceService(options: PiperOptions) =
                         |> Option.defaultValue 320
 
                     let session =
-                        ReferencePipeline.buildSession request.Locale g2p durationMs
+                        this.BuildSession request.Locale g2p wavBytes durationMs
 
                     let audioUrl = ReferenceMedia.save options request.Text wavBytes
 

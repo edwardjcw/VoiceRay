@@ -8,7 +8,7 @@
 | --------- | ----------------- | ----------- |
 | Piper CLI | `models/piper/bin/piper/piper.exe` | Required for reference TTS |
 | Piper en-US voice | `models/piper/voices/en_US-lessac-medium.onnx` | Required |
-| Wav2Vec2 phoneme model | `models/wav2vec2/model_quantized.onnx` + `vocab.json` | **Default** recognition + alignment (auto-download) |
+| Wav2Vec2 phoneme model | `models/wav2vec2/<variant>.onnx` + `vocab.json` | **Default** recognition + alignment (auto-download; variant configurable) |
 | Whisper cache | `%USERPROFILE%\.cache\whisper\` | Fallback (reuse existing install) |
 | MFA worker | `workers/mfa/` Docker | Phase 4 stub (HTTP not wired in API yet) |
 | Azure Speech | — | **Deferred** |
@@ -62,6 +62,12 @@ It performs greedy CTC decoding to recognize the phonemes the user actually prod
 per-phoneme timestamps from the CTC frame spans, replacing the heuristic even-spread alignment,
 the Whisper whole-word lexicon match, and the DSP vowel probe.
 
+The same model also tightens **`/reference`** timing: the known G2P IPA sequence is **CTC
+forced-aligned** (`Ctc.forcedAlign`) against the synthesized Piper audio
+(`Wav2Vec2Phoneme.tryForcedAlign`), so reference keyframes carry real acoustic boundaries instead
+of an even spread. Any failure (model absent, an IPA symbol that cannot be mapped to a model token,
+or an infeasible alignment) transparently falls back to the even-spread `ReferencePipeline.buildSession`.
+
 | Piece | Location |
 | ----- | -------- |
 | CTC decode + forced alignment (pure) | `VoiceRay.Core/Ctc.fs` |
@@ -72,9 +78,21 @@ the Whisper whole-word lexicon match, and the DSP vowel probe.
 ### Model
 
 - Source: [`onnx-community/wav2vec2-lv-60-espeak-cv-ft-ONNX`](https://huggingface.co/onnx-community/wav2vec2-lv-60-espeak-cv-ft-ONNX) (ONNX export of `facebook/wav2vec2-lv-60-espeak-cv-ft`, IPA output).
-- File: `onnx/model_quantized.onnx` (int8, ~318 MB — CPU-friendly) + `vocab.json`, pinned to commit `c69750f5043e5e1f8a71ab95dd3b98338c280c92`.
-- Destination: `models/wav2vec2/` (gitignored). Override the directory with `VOICERAY_WAV2VEC2_DIR`.
+- Files: one ONNX **variant** + `vocab.json`, pinned to commit `c69750f5043e5e1f8a71ab95dd3b98338c280c92`.
+- Destination: `models/wav2vec2/<variant>.onnx` (gitignored). Override the directory with `VOICERAY_WAV2VEC2_DIR`.
 - Input: 16 kHz mono float waveform, zero-mean/unit-variance (HF feature extractor). Frame stride ≈ 20 ms.
+
+#### Model variant (precision / accuracy tradeoff)
+
+| Variant (`ModelVariant`) | File | Size | Notes |
+| ------------------------ | ---- | ---- | ----- |
+| `model` (**default**) | `onnx/model.onnx` | ~1.2 GB | Full **fp32** — best front-vowel discrimination; highest RAM/CPU |
+| `model_fp16` | `onnx/model_fp16.onnx` | ~603 MB | Half-precision weights; near-fp32 accuracy, smaller download (CPU EP up-casts to fp32 at runtime) |
+| `model_quantized` | `onnx/model_quantized.onnx` | ~303 MB | int8 dynamic quant — smallest/lightest, but **coarser vowels** (resolved the lax `/ɪ/` in the `pit` fixture as `/e/`) |
+
+The default was raised from int8 (`model_quantized`) to **full fp32 (`model`)** because the int8
+model could not reliably separate adjacent front vowels (e.g. `/ɪ/` vs `/ɛ/`). Choose a lighter
+variant when disk/RAM is constrained and exact vowel quality matters less.
 
 ### Provision
 
@@ -85,15 +103,18 @@ When the model is absent the pipeline transparently falls back to the Whisper/ac
 ### Configuration
 
 ```json
-"Alignment": { "Provider": "Wav2Vec2" }
+"Alignment": {
+  "Provider": "Wav2Vec2",
+  "Wav2Vec2": { "ModelVariant": "model" }
+}
 ```
 
 `Provider` accepts `Wav2Vec2` (default, alias `Phoneme`), `Whisper`, or `Mfa`. Analyze metadata reports
 `alignmentEngine: "wav2vec2"` and `phonemeInference: "wav2vec2"` when the model path is used.
 
-> **Accuracy note:** the int8 quantized model is the size/CPU default; swap in the full-precision
-> `onnx/model.onnx` for finer vowel discrimination. `Ctc.forcedAlign` is available to tighten
-> `/reference` (Piper TTS) keyframe timing in a follow-up.
+`Wav2Vec2:ModelVariant` selects the ONNX precision variant (`model` / `model_fp16` /
+`model_quantized`; see the table above). The environment variable **`VOICERAY_WAV2VEC2_VARIANT`**
+overrides the config value (and decides both which file is downloaded and which file is loaded).
 
 ## Forced alignment (Whisper vs MFA) — fallback
 

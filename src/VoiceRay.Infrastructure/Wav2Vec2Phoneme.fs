@@ -165,3 +165,75 @@ module Wav2Vec2Phoneme =
                             Recognized(segments, ipa)
                     with ex ->
                         Unavailable $"wav2vec2 inference failed: {ex.Message}"
+
+    /// Reverse of `Wav2Vec2Vocab.normalizeIpa`: maps an en-US inventory IPA symbol back to a
+    /// model token id. Prefers an exact vocab token, else the lowest-id token whose
+    /// `normalizeIpa` equals the target symbol. Specials/blanks are never selected.
+    let private targetTokenId (v: Wav2Vec2Vocab.Vocab) (symbol: string) : int option =
+        match v.TokenToId.TryFind symbol with
+        | Some id when not (v.SpecialIds.Contains id) -> Some id
+        | _ ->
+            v.IdToToken
+            |> Map.toSeq
+            |> Seq.sortBy fst
+            |> Seq.tryPick (fun (id, tok) ->
+                if v.SpecialIds.Contains id then None
+                elif Wav2Vec2Vocab.normalizeIpa tok = symbol then Some id
+                else None)
+
+    /// Forced-aligns a KNOWN target IPA sequence (e.g. reference G2P) to the audio via CTC
+    /// Viterbi, producing real per-phoneme timestamps. The original target IPA symbols are kept
+    /// on the returned segments (not the model tokens). Returns `Error` (so callers can fall
+    /// back) when the model is absent, a symbol cannot be mapped, or alignment is infeasible.
+    let tryForcedAlign (repoRoot: string) (normalizedWav: byte[]) (targetIpa: string list) : Result<PhonemeSegment list, string> =
+        if not (isReady repoRoot) then
+            Error "wav2vec2 model is not provisioned"
+        elif List.isEmpty targetIpa then
+            Error "no target phonemes to align"
+        else
+            match AudioNormalizer.normalize normalizedWav with
+            | Error _ -> Error "could not normalize WAV for wav2vec2 forced alignment"
+            | Ok normalized ->
+                match AudioNormalizer.tryParsePcm normalized with
+                | None -> Error "could not parse normalized WAV for wav2vec2 forced alignment"
+                | Some pcm ->
+                    match ensureSession repoRoot with
+                    | None ->
+                        match lastLoadError with
+                        | Some e -> Error $"wav2vec2 model could not be loaded: {e}"
+                        | None -> Error "wav2vec2 model could not be loaded"
+                    | Some(_, None) -> Error "wav2vec2 vocab unavailable"
+                    | Some(s, Some v) ->
+                        let mapped = targetIpa |> List.map (fun sym -> sym, targetTokenId v sym)
+
+                        match mapped |> List.tryPick (fun (sym, id) -> if Option.isNone id then Some sym else None) with
+                        | Some missing -> Error $"could not map IPA symbol '{missing}' to a wav2vec2 token"
+                        | None ->
+                            let tokenIds = mapped |> List.map (fun (_, id) -> Option.get id)
+
+                            try
+                                let input = toInputValues pcm.Samples
+                                let logits = runLogits s input
+                                let frames = logits.Length
+
+                                let durationMs =
+                                    if pcm.SampleRate > 0 then
+                                        pcm.Samples.Length * 1000 / pcm.SampleRate
+                                    else
+                                        pcm.Samples.Length * 1000 / 16000
+
+                                match Ctc.forcedAlign v.BlankId tokenIds logits with
+                                | None -> Error "wav2vec2 forced alignment is infeasible for this audio"
+                                | Some spans ->
+                                    let segments =
+                                        List.zip targetIpa spans
+                                        |> List.map (fun (sym, span) ->
+                                            let startMs, endMs = Ctc.spanToMs frames durationMs span
+
+                                            { Ipa = sym
+                                              StartMs = startMs
+                                              EndMs = endMs })
+
+                                    Ok segments
+                            with ex ->
+                                Error $"wav2vec2 forced alignment failed: {ex.Message}"

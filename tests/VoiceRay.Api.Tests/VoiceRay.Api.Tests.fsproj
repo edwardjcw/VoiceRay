@@ -11,6 +11,7 @@
     <Compile Include="ReferenceServiceTests.fs" />
     <Compile Include="AnalyzeServiceTests.fs" />
     <Compile Include="PitWavInferenceTests.fs" />
+    <Compile Include="PitPetVowelTests.fs" />
     <Compile Include="CompareServiceTests.fs" />
   </ItemGroup>
 

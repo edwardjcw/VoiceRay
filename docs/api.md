@@ -85,6 +85,13 @@ Generates reference TTS audio, IPA phoneme timeline, and articulatory keyframes 
 
 \* Provide **at least one** of `audioUrl` or `audioBase64`.
 
+**Phoneme timing:** when the `Wav2Vec2` alignment provider is selected (default) and the model is
+provisioned, the known G2P IPA sequence is **CTC forced-aligned** against the synthesized Piper
+audio, so `phonemes`/`keyframes` carry real acoustic per-phoneme timestamps (boundaries are not
+evenly spread and may not cover the whole clip). If the model is absent, an unmapped symbol is
+encountered, or alignment is infeasible, the endpoint transparently falls back to the heuristic
+even-spread G2P timeline — the response shape is identical either way.
+
 ```json
 {
   "audioUrl": "/media/reference/abc123.wav",
