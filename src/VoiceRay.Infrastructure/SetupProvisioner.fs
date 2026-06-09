@@ -22,8 +22,18 @@ module SetupProvisioner =
             Detail = PiperProvisioner.statusMessage piper
             Required = true
             CanAutoProvision = OperatingSystem.IsWindows() }
+          { Id = "wav2vec2"
+            Label = "Wav2Vec2 phoneme model (recognition + alignment)"
+            Status =
+                if Wav2Vec2Provisioner.isReady contentRoot then
+                    "ready"
+                else
+                    "missing"
+            Detail = "onnx-community/wav2vec2-lv-60-espeak-cv-ft-ONNX (~318 MB)"
+            Required = false
+            CanAutoProvision = true }
           { Id = "whisper"
-            Label = "Whisper alignment cache"
+            Label = "Whisper alignment cache (fallback)"
             Status =
                 if WhisperProvisioner.isReady alignment then
                     "ready"
@@ -81,6 +91,14 @@ module SetupProvisioner =
             match WhisperProvisioner.tryProvision alignment with
             | Error message -> failwith message
             | Ok () -> ()
+
+        // Optional: download the wav2vec2 phoneme model (best-effort; large one-time download).
+        if not (Wav2Vec2Provisioner.isReady contentRoot) then
+            ProvisionLog.info "Setting up Wav2Vec2 phoneme model (~318 MB, one-time)…"
+
+            match Wav2Vec2Provisioner.tryProvision contentRoot with
+            | Error message -> ProvisionLog.warn $"Wav2Vec2 model not provisioned: {message} (falling back to Whisper/acoustic)."
+            | Ok () -> ProvisionLog.info "Wav2Vec2 phoneme model is ready."
 
         if not (PiperProvisioner.isReady piper) then
             if not (OperatingSystem.IsWindows()) then

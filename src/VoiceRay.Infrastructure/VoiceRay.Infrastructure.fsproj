@@ -6,6 +6,7 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="10.0.0" />
+    <PackageReference Include="Microsoft.ML.OnnxRuntime" Version="1.26.0" />
   </ItemGroup>
 
   <ItemGroup>
@@ -21,12 +22,15 @@
     <Compile Include="WhisperProvisioner.fs" />
     <Compile Include="WhisperPython.fs" />
     <Compile Include="VocalTractProvisioner.fs" />
+    <Compile Include="Wav2Vec2Vocab.fs" />
+    <Compile Include="Wav2Vec2Provisioner.fs" />
     <Compile Include="SetupProvisioner.fs" />
     <Compile Include="SpeechCapabilities.fs" />
     <Compile Include="ReferenceService.fs" />
     <Compile Include="OssAlignment.fs" />
     <Compile Include="AcousticVowelProbe.fs" />
     <Compile Include="WhisperTranscriber.fs" />
+    <Compile Include="Wav2Vec2Phoneme.fs" />
     <Compile Include="UserPhonemeInference.fs" />
     <Compile Include="AnalyzeService.fs" />
     <Compile Include="CompareService.fs" />

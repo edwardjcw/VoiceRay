@@ -26,6 +26,10 @@ let private piperOptions () =
       VoiceModel = Path.Combine(root, "models", "piper", "voices", "en_US-lessac-medium.onnx")
       MediaRoot = Path.Combine(root, "wwwroot", "media", "reference") }
 
+let private wav2vecAlignmentOptions () =
+    { alignmentOptions () with
+        Provider = AlignmentProvider.Wav2Vec2 }
+
 let private piperConfigured () =
     let opts = piperOptions ()
     PiperOptions.isConfigured opts
@@ -134,6 +138,67 @@ let ``AnalyzeService keeps expected vowel for pat-like production`` () =
         match service.Analyze(wav, "pat", "en-US") with
         | Error err -> Assert.Fail($"Expected OK, got {err}")
         | Ok response -> Assert.Equal("æ", response.Phonemes.[1].Ipa)
+
+[<Fact>]
+let ``AnalyzeService falls back to legacy chain when wav2vec2 model is absent`` () =
+    if Wav2Vec2Phoneme.isReady (repoRoot ()) then
+        () // model present on this host — covered by the gated integration test below
+    else
+        let service =
+            AnalyzeService(wav2vecAlignmentOptions (), piperOptions (), contentRoot ())
+
+        let wav = wav16kMono ()
+
+        match service.Analyze(wav, "pat", "en-US") with
+        | Error err -> Assert.Fail($"Expected OK, got {err}")
+        | Ok response ->
+            Assert.Equal(3, response.Phonemes.Length)
+            Assert.NotEqual<string>("wav2vec2", response.Metadata.AlignmentEngine)
+
+[<Fact>]
+let ``AnalyzeService recognizes pit vowel via wav2vec2 when model provisioned`` () =
+    let fixture =
+        Path.Combine(repoRoot (), "tests", "fixtures", "pit-practice-pat.wav")
+
+    if not (Wav2Vec2Phoneme.isReady (repoRoot ())) || not (File.Exists fixture) then
+        () // wav2vec2 model or recording fixture unavailable in this environment
+    else
+        Wav2Vec2Phoneme.resetSession ()
+
+        try
+            let service =
+                AnalyzeService(wav2vecAlignmentOptions (), piperOptions (), contentRoot ())
+
+            let wav = File.ReadAllBytes fixture
+
+            match service.Analyze(wav, "pat", "en-US") with
+            | Error err -> Assert.Fail($"Expected OK, got {err}")
+            | Ok response ->
+                let ipas = response.Phonemes |> List.map (fun p -> p.Ipa) |> String.concat ","
+
+                // The wav2vec2 path engaged (vs. the legacy whisper/acoustic fallback).
+                Assert.True(
+                    response.Metadata.AlignmentEngine = "wav2vec2",
+                    $"engine={response.Metadata.AlignmentEngine} inference={response.Metadata.PhonemeInference} note={response.Metadata.InferenceNote} phonemes=[{ipas}]"
+                )
+
+                Assert.Equal(Some "wav2vec2", response.Metadata.PhonemeInference)
+
+                // Real acoustic recognition: the front vowel the user produced for "pit"
+                // (a front vowel such as ɪ/e/ɛ/i), not the prompted /æ/.
+                let frontVowels = set [ "ɪ"; "e"; "ɛ"; "i" ]
+
+                Assert.True(
+                    response.Phonemes |> List.exists (fun p -> frontVowels.Contains p.Ipa),
+                    $"expected a front vowel in [{ipas}]"
+                )
+
+                Assert.False(
+                    response.Phonemes |> List.exists (fun p -> p.Ipa = "æ"),
+                    $"should not hear the prompted æ in [{ipas}]"
+                )
+        finally
+            Wav2Vec2Phoneme.resetSession ()
 
 [<Fact>]
 let ``AnalyzeService infers pit from user pit wav fixture when practicing pat`` () =

@@ -39,7 +39,8 @@ module OssAlignment =
 
     let align (options: AlignmentOptions) (locale: Locale) (g2p: G2pStub.G2pResult) (durationMs: int) =
         let preferWhisper =
-            options.Provider = AlignmentProvider.Whisper
+            (options.Provider = AlignmentProvider.Whisper
+             || options.Provider = AlignmentProvider.Wav2Vec2)
             && AlignmentOptions.whisperCacheAvailable options
 
         let engine =

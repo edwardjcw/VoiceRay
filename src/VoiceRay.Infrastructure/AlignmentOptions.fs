@@ -2,10 +2,12 @@ namespace VoiceRay.Infrastructure
 
 open Microsoft.Extensions.Configuration
 
-/// OSS alignment provider selection (Whisper preferred, MFA fallback stub).
+/// OSS alignment provider selection. `Wav2Vec2` (in-process ONNX phoneme model) is
+/// preferred when provisioned; `Whisper`/`Mfa` remain as fallbacks.
 type AlignmentProvider =
     | Whisper
     | Mfa
+    | Wav2Vec2
 
 type AlignmentOptions =
     { Provider: AlignmentProvider
@@ -22,6 +24,11 @@ module AlignmentOptions =
         let provider =
             match section.["Provider"] |> Option.ofObj with
             | Some value when value.Equals("Mfa", System.StringComparison.OrdinalIgnoreCase) -> Mfa
+            | Some value when
+                value.Equals("Wav2Vec2", System.StringComparison.OrdinalIgnoreCase)
+                || value.Equals("Phoneme", System.StringComparison.OrdinalIgnoreCase)
+                ->
+                Wav2Vec2
             | _ -> Whisper
 
         let cacheDir =
