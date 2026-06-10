@@ -24,17 +24,15 @@ let ``CompareService rejects empty reference phonemes`` () =
     | other -> Assert.Fail($"Expected InvalidRequest, got {other}")
 
 [<Fact>]
-let ``CompareService rejects unsupported locale`` () =
+let ``CompareService accepts non-en-US locales (multilingual diff)`` () =
     let service = CompareService()
 
-    match
-        service.Compare
-            { ReferencePhonemes = [ segment "t" ]
-              UserPhonemes = [ segment "t" ]
-              Locale = "fr-FR" }
-    with
-    | Error CompareServiceError.UnsupportedLocale -> ()
-    | other -> Assert.Fail($"Expected UnsupportedLocale, got {other}")
+    let ref = [ segment "ʃ"; { segment "a" with StartMs = 100; EndMs = 200 } ]
+    let user = [ segment "s"; { segment "a" with StartMs = 100; EndMs = 200 } ]
+
+    match service.Compare { ReferencePhonemes = ref; UserPhonemes = user; Locale = "fr-FR" } with
+    | Error err -> Assert.Fail($"Expected OK for fr-FR, got {err}")
+    | Ok response -> Assert.Contains(CompareSegment.Substitution("ʃ", "s"), response.Segments)
 
 [<Fact>]
 let ``CompareService returns segments and coaching for pat vs final stop substitution`` () =

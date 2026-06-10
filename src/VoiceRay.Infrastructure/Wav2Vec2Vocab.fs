@@ -19,6 +19,8 @@ module Wav2Vec2Vocab =
 
     /// Maps an espeak IPA token to the VoiceRay inventory: drops length/stress/
     /// palatalization marks and folds a few near-equivalents onto demo symbols.
+    /// Nasal vowels (e.g. ɑ̃ ɛ̃ ɔ̃ œ̃) are preserved so non-English (French) words map
+    /// to their own poses instead of collapsing onto en-US oral vowels.
     let normalizeIpa (token: string) : string =
         let stripped =
             token
@@ -32,7 +34,6 @@ module Wav2Vec2Vocab =
         | "ɐ" -> "ə" // near-open central → schwa
         | "ᵻ" -> "ɪ" // barred-i (reduced) → ɪ
         | "ɝ" -> "ɚ" // stressed rhotic schwa → ɚ
-        | "ɑ̃" -> "ɑ"
         | "g" -> "ɡ" // ASCII g → IPA script g (matches G2pStub)
         | other -> other
 

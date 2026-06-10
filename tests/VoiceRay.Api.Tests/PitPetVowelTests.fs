@@ -34,7 +34,8 @@ let private piperOptions () =
 
     { Executable = Path.Combine(root, "models", "piper", "bin", "piper", "piper.exe")
       VoiceModel = Path.Combine(root, "models", "piper", "voices", "en_US-lessac-medium.onnx")
-      MediaRoot = Path.Combine(root, "wwwroot", "media", "reference") }
+      MediaRoot = Path.Combine(root, "wwwroot", "media", "reference")
+      Voices = Map.empty }
 
 let private wav2vec2Alignment () =
     { Provider = AlignmentProvider.Wav2Vec2

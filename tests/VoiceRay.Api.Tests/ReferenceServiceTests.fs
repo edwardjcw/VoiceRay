@@ -12,7 +12,8 @@ let private repoRoot =
 let private piperOptions () =
     { Executable = Path.Combine(repoRoot, "models", "piper", "bin", "piper", "piper.exe")
       VoiceModel = Path.Combine(repoRoot, "models", "piper", "voices", "en_US-lessac-medium.onnx")
-      MediaRoot = Path.Combine(repoRoot, "src", "VoiceRay.Api", "wwwroot", "media", "reference") }
+      MediaRoot = Path.Combine(repoRoot, "src", "VoiceRay.Api", "wwwroot", "media", "reference")
+      Voices = Map.empty }
 
 /// Even-spread reference (no forced alignment): provider Whisper keeps timing deterministic
 /// regardless of whether the wav2vec2 model is provisioned on the host.
@@ -30,11 +31,46 @@ let private referenceService (piper: PiperOptions) =
     ReferenceService(piper, evenSpreadAlignment (), repoRoot)
 
 [<Fact>]
-let ``ReferenceService rejects unknown demo word`` () =
-    let service = referenceService (piperOptions ())
-    match service.Generate { Text = "xyzzy"; Locale = "en-US" } with
-    | Error ReferenceServiceError.G2pUnavailable -> ()
-    | other -> Assert.Fail($"Expected G2pUnavailable, got {other}")
+let ``ReferenceService recognizes an arbitrary typed word from synthesized audio`` () =
+    let options = piperOptions ()
+
+    if not (PiperOptions.isConfigured options) || not (Wav2Vec2Phoneme.isReady repoRoot) then
+        () // needs Piper synthesis + the wav2vec2 phoneme model on this host
+    else
+        Wav2Vec2Phoneme.resetSession ()
+
+        try
+            // "banana" is not in the demo lexicon, so it must be phoneme-recognized.
+            let service = ReferenceService(options, wav2vec2Alignment (), repoRoot)
+
+            match service.Generate { Text = "banana"; Locale = "en-US" } with
+            | Error err -> Assert.Fail($"Expected OK for an arbitrary word, got {err}")
+            | Ok response ->
+                Assert.False(List.isEmpty response.Phonemes, "recognition should yield phonemes")
+                Assert.False(List.isEmpty response.Keyframes)
+                Assert.False(System.String.IsNullOrWhiteSpace response.IpaDisplay)
+
+                let ordered =
+                    response.Phonemes
+                    |> List.pairwise
+                    |> List.forall (fun (a, b) -> a.StartMs <= a.EndMs && a.EndMs <= b.StartMs)
+
+                Assert.True(ordered, "recognized phonemes should be ordered and non-overlapping")
+        finally
+            Wav2Vec2Phoneme.resetSession ()
+
+[<Fact>]
+let ``ReferenceService fails arbitrary word cleanly when recognition model is absent`` () =
+    let options = piperOptions ()
+
+    if not (PiperOptions.isConfigured options) || Wav2Vec2Phoneme.isReady repoRoot then
+        () // only meaningful when the model is NOT provisioned
+    else
+        let service = ReferenceService(options, wav2vec2Alignment (), repoRoot)
+
+        match service.Generate { Text = "banana"; Locale = "en-US" } with
+        | Error(ReferenceServiceError.RecognitionUnavailable _) -> ()
+        | other -> Assert.Fail($"Expected RecognitionUnavailable, got {other}")
 
 [<Fact>]
 let ``ReferenceService returns keyframes for pat when Piper configured`` () =

@@ -26,6 +26,15 @@ module ApiContractEndpoints =
             Results.Json(
                 {| error = "Unknown word or unsupported locale; demo lexicon only (en-US)." |},
                 statusCode = StatusCodes.Status400BadRequest)
+        | Error(ReferenceServiceError.RecognitionUnavailable message) ->
+            Results.Json(
+                {| error =
+                    "Phoneme recognition is required for free-typed words but is not ready: "
+                    + message
+                    + " Use setup in the app to download the phoneme model."
+                   code = "recognition_not_ready"
+                   canProvision = true |},
+                statusCode = StatusCodes.Status503ServiceUnavailable)
         | Error ReferenceServiceError.TtsUnavailable ->
             Results.Json(
                 {| error = "Speech engine is not ready. Use setup in the app to download it."

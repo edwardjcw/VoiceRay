@@ -14,8 +14,9 @@ type PiperTtsError =
 module PiperTts =
     let private synthesisTimeoutMs = 120_000
 
-    let synthesize (options: PiperOptions) (text: string) =
-        if not (PiperOptions.isConfigured options) then
+    /// Synthesizes `text` with a specific voice model (used for non-default locales).
+    let synthesizeWithVoice (options: PiperOptions) (voiceModel: string) (text: string) =
+        if not (File.Exists options.Executable && File.Exists voiceModel) then
             Error NotConfigured
         elif String.IsNullOrWhiteSpace text then
             Error(ProcessFailed(-1, "Synthesis text is empty."))
@@ -39,7 +40,7 @@ module PiperTts =
                     )
 
                 psi.ArgumentList.Add("-m")
-                psi.ArgumentList.Add(options.VoiceModel)
+                psi.ArgumentList.Add(voiceModel)
                 psi.ArgumentList.Add("-f")
                 psi.ArgumentList.Add(outputPath)
                 psi.ArgumentList.Add("-q")
@@ -77,3 +78,7 @@ module PiperTts =
             finally
                 if File.Exists outputPath then
                     File.Delete outputPath |> ignore
+
+    /// Synthesizes `text` with the default (en-US) voice.
+    let synthesize (options: PiperOptions) (text: string) =
+        synthesizeWithVoice options options.VoiceModel text

@@ -28,6 +28,15 @@ let ``normalizeIpa folds espeak variants onto the en-US inventory`` () =
     Assert.Equal("æ", Wav2Vec2Vocab.normalizeIpa "æ") // unchanged
 
 [<Fact>]
+let ``normalizeIpa preserves French nasal vowels`` () =
+    // Nasal vowels must survive so French words map to nasal poses, not en-US oral vowels.
+    Assert.Equal("ɑ̃", Wav2Vec2Vocab.normalizeIpa "ɑ̃")
+    Assert.Equal("ɛ̃", Wav2Vec2Vocab.normalizeIpa "ɛ̃")
+    Assert.Equal("ɔ̃", Wav2Vec2Vocab.normalizeIpa "ɔ̃")
+    // French close front rounded vowel passes through unchanged.
+    Assert.Equal("y", Wav2Vec2Vocab.normalizeIpa "y")
+
+[<Fact>]
 let ``spanToIpa returns normalized phoneme and skips specials`` () =
     match Wav2Vec2Vocab.tryParse sampleJson with
     | None -> Assert.Fail("expected vocab to parse")

@@ -25,27 +25,35 @@ type AnalyzeService(alignmentOptions: AlignmentOptions, piperOptions: PiperOptio
             | Error(AudioNormalizer.InvalidWav message) -> Error(InvalidAudio message)
             | Error(AudioNormalizer.UnsupportedFormat message) -> Error(InvalidAudio message)
             | Ok normalized ->
-                match G2pStub.tryLookup locale text with
-                | None -> Error G2pUnavailable
-                | Some g2p ->
-                    let durationMs =
-                        WavDuration.tryGetDurationMs normalized
-                        |> Option.defaultValue 320
+                // Known demo word → exact G2P baseline; arbitrary/typed word → empty baseline
+                // and rely on acoustic phoneme recognition (wav2vec2).
+                let g2p =
+                    G2pStub.tryLookup locale text
+                    |> Option.defaultValue { IpaSymbols = []; IpaDisplay = "" }
 
-                    let alignment = OssAlignment.align alignmentOptions locale g2p durationMs
+                let durationMs =
+                    WavDuration.tryGetDurationMs normalized
+                    |> Option.defaultValue 320
 
-                    let inference =
-                        UserPhonemeInference.infer
-                            contentRoot
-                            alignmentOptions
-                            piperOptions
-                            normalized
-                            locale
-                            text
-                            alignment.Phonemes
-                            durationMs
+                let alignment = OssAlignment.align alignmentOptions locale g2p durationMs
 
-                    let phonemes = inference.Phonemes
+                let inference =
+                    UserPhonemeInference.infer
+                        contentRoot
+                        alignmentOptions
+                        piperOptions
+                        normalized
+                        locale
+                        text
+                        alignment.Phonemes
+                        durationMs
+
+                let phonemes = inference.Phonemes
+
+                if List.isEmpty phonemes then
+                    // No demo-lexicon entry and recognition unavailable → nothing to show.
+                    Error G2pUnavailable
+                else
                     let keyframes = PoseMap.keyframesForTimeline locale phonemes
                     let scores = AnalyzeScoring.scorePhonemes phonemes
 

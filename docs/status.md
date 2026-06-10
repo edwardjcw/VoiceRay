@@ -172,6 +172,27 @@ Tightens `/reference` timing with CTC forced alignment and makes the wav2vec2 pr
 | Models | All variants live under `models/wav2vec2/` (gitignored); Piper provisioned under `models/piper/` |
 | Docs | `providers.md` (variant table + config + forced-alignment), `api.md` (reference timing note), this entry |
 
+## 2026-06-09 — Typed multilingual words + compare spectrogram (`feature/typed-word-multilingual-spectrogram`)
+
+Moves past the fixed demo-word picker: users **type any word** and pick a **language (en-US / fr-FR)**, and the Compare phase gains a **toggleable side-by-side spectrogram**.
+
+| Item | Status |
+| ---- | ------ |
+| Branch | `feature/typed-word-multilingual-spectrogram` |
+| Approach (typed words) | Per user decision **A**: synthesize the typed word with the locale's Piper voice, then recognize phonemes from that audio with the existing wav2vec2 espeak model. No new model dependency; works for any Piper language |
+| Model note | Research confirms `wav2vec2-lv-60-espeak-cv-ft` (fp32 default) is the best general **multilingual** espeak phoneme model available pre-built as ONNX. A French-specific phonemizer would need a Python/torch ONNX export (conflicts with no-Python-at-runtime) → deferred; model source stays configurable |
+| Piper voices | `PiperOptions.Voices` (locale→ONNX) + `resolveVoice`/`isVoiceReady`; `PiperProvisioner.tryProvisionLocale` downloads the binary + locale voice on demand (fr-FR `fr_FR-siwis-medium` from rhasspy/piper-voices); `PiperTts.synthesizeWithVoice` |
+| Reference | `ReferenceService`: demo word → exact G2P (forced-aligned as before); **any other word → `RecognizeSession`** (normalize Piper WAV → `Wav2Vec2Phoneme.tryRecognize` → phonemes/keyframes/ipaDisplay). New `RecognitionUnavailable` error surfaced as 503 `recognition_not_ready` |
+| Analyze | Arbitrary/typed words no longer hard-fail on G2P: empty baseline + wav2vec2 recognition; only `G2pUnavailable` when nothing is produced |
+| Poses | `PoseMap` is now locale-agnostic (IPA-keyed inventory) + French additions: `y ø œ o e a`, nasals `ɑ̃ ɛ̃ ɔ̃ œ̃` (velum lowered), uvular `ʁ/ʀ/χ`, palatals `ɲ ɥ j`, `w f v s z` |
+| Vocab | `normalizeIpa` no longer folds `ɑ̃→ɑ` so French nasals survive recognition |
+| Compare | `CompareService` accepts any locale (diff is language-agnostic; en-US coaching copy unchanged) |
+| Frontend input | `App.js` word `<select>` → free-text `<input list=word-suggestions>` + language `<select>` (en-US/fr-FR); per-locale suggestion datalist; `demoWords.js` adds `LOCALES`/`SUGGESTIONS_BY_LOCALE` |
+| Spectrogram | New `client/src/audio/spectrogram.js` (radix-2 FFT + Hann STFT + heatmap + Web Audio decode); Compare panel has **Show/Hide spectrogram** toggle revealing side-by-side Reference vs Your-recording canvases (lazy-rendered) |
+| Tests | Core: `PoseMapTests` (French poses), `PiperOptionsTests` (voice resolution), vocab nasal-preservation. Api: `CompareServiceTests` fr-FR accepted, `ReferenceServiceTests` gated arbitrary-word recognition + gated model-absent path. Frontend: `spectrogram.test.js` (FFT/STFT), e2e language-switch + spectrogram-toggle |
+| Gates | `dotnet build` 0/0; `dotnet test` Core 47 + Api 26 pass; `npm run build` clean; `npm run test` 18 unit + 6 mock e2e + 3 real-API integration pass |
+| Fix (media path) | Newly synthesized reference audio 404'd on playback: `MediaRoot` was anchored at the repo root (`PiperOptions.load repoRoot`) but static files are served from the API web root (`ContentRoot/wwwroot`). Demo words only worked because their wavs were pre-seeded in the served folder. `Program.fs` now re-anchors `MediaRoot` at `ContentRootPath` so saved `/media/reference/*.wav` is reachable for any word/locale |
+
 ## Agent notes
 
 - Final PR per user policy; no per-ticket PRs.
