@@ -21,7 +21,26 @@ let main args =
     builder.Services.AddOpenApi() |> ignore
 
     let repoRoot = RepoPaths.resolveRepoRoot builder.Environment.ContentRootPath
-    let piperOptions = PiperOptions.load builder.Configuration repoRoot
+
+    let piperOptions =
+        // `PiperOptions.load` anchors every relative path at the repo root, which is correct
+        // for models/ but wrong for reference audio: static files are served from the API's
+        // web root (ContentRoot/wwwroot), not the repo root. Re-anchor MediaRoot there so the
+        // saved /media/reference/*.wav is actually reachable for any newly synthesized word.
+        let loaded = PiperOptions.load builder.Configuration repoRoot
+
+        let mediaRel =
+            builder.Configuration.[$"{PiperOptions.sectionName}:MediaRoot"]
+            |> Option.ofObj
+            |> Option.defaultValue "wwwroot/media/reference"
+
+        let mediaRoot =
+            if System.IO.Path.IsPathRooted mediaRel then
+                mediaRel
+            else
+                System.IO.Path.GetFullPath(System.IO.Path.Combine(builder.Environment.ContentRootPath, mediaRel))
+
+        { loaded with MediaRoot = mediaRoot }
     let alignmentOptions = AlignmentOptions.load builder.Configuration repoRoot
     // Make the configured wav2vec2 precision variant the process default (env still overrides)
     // so provisioning/readiness/model-path resolution all agree on one filename.

@@ -190,7 +190,8 @@ Moves past the fixed demo-word picker: users **type any word** and pick a **lang
 | Frontend input | `App.js` word `<select>` → free-text `<input list=word-suggestions>` + language `<select>` (en-US/fr-FR); per-locale suggestion datalist; `demoWords.js` adds `LOCALES`/`SUGGESTIONS_BY_LOCALE` |
 | Spectrogram | New `client/src/audio/spectrogram.js` (radix-2 FFT + Hann STFT + heatmap + Web Audio decode); Compare panel has **Show/Hide spectrogram** toggle revealing side-by-side Reference vs Your-recording canvases (lazy-rendered) |
 | Tests | Core: `PoseMapTests` (French poses), `PiperOptionsTests` (voice resolution), vocab nasal-preservation. Api: `CompareServiceTests` fr-FR accepted, `ReferenceServiceTests` gated arbitrary-word recognition + gated model-absent path. Frontend: `spectrogram.test.js` (FFT/STFT), e2e language-switch + spectrogram-toggle |
-| Gates | `npm run build` clean; `node --test` 18 pass; Playwright mock e2e 6 pass. `dotnet test`/`dotnet build` — see commit gate entry below |
+| Gates | `dotnet build` 0/0; `dotnet test` Core 47 + Api 26 pass; `npm run build` clean; `npm run test` 18 unit + 6 mock e2e + 3 real-API integration pass |
+| Fix (media path) | Newly synthesized reference audio 404'd on playback: `MediaRoot` was anchored at the repo root (`PiperOptions.load repoRoot`) but static files are served from the API web root (`ContentRoot/wwwroot`). Demo words only worked because their wavs were pre-seeded in the served folder. `Program.fs` now re-anchors `MediaRoot` at `ContentRootPath` so saved `/media/reference/*.wav` is reachable for any word/locale |
 
 ## Agent notes
 
